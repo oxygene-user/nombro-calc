@@ -409,8 +409,7 @@ static bool is_letter(wchar_t c)
 
 			if (radix == 16)
 				non10radix.push_back(c);
-
-			if (int_part.empty())
+			else if (int_part.empty())
 				var_in_progress = true;
 
 			continue;
