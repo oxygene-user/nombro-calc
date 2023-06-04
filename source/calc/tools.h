@@ -20,18 +20,6 @@ typedef ptrdiff_t signed_t;
 
 #define ONEBIT(x) (static_cast<size_t>(1)<<(x))
 
-enum cpu_caps_e
-{
-    CPU_MMX = ONEBIT(0),
-    CPU_SSE = ONEBIT(1),
-    CPU_SSE2 = ONEBIT(2),
-    CPU_SSE3 = ONEBIT(3),
-    CPU_SSSE3 = ONEBIT(4),
-    CPU_SSE41 = ONEBIT(5),
-    CPU_AVX = ONEBIT(6),
-    CPU_AVX2 = ONEBIT(7),
-};
-
 #define PTR_TO_UNSIGNED( p ) ((size_t)p)
 #define INLINE __inline
 #define ALIGN(n) __declspec( align( n ) )
@@ -109,8 +97,6 @@ typedef u64 udouble;
 
 typedef unsigned long Color;
 
-#include "cpu_detector.h"
-
 inline bool is_debugger_present()
 {
 #ifdef _WIN32
@@ -157,8 +143,6 @@ template<typename Tout, typename Tin> const Tout& ref_cast(const Tin& t1, const 
 	ASSERT(((u8*)&t1) + sizeof(Tin) == (u8*)&t2);
 	return *(const Tout*)&t1;
 }
-
-#include "sync.h"
 
 namespace math
 {

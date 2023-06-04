@@ -21,9 +21,6 @@
     <Filter Include="src\core">
       <UniqueIdentifier>{8b4e9a58-edd7-4575-935b-d07cc95448da}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\sync">
-      <UniqueIdentifier>{3ae82ed1-959b-4091-a396-d8432d002f5b}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calc.h">
@@ -59,9 +56,6 @@
     <ClInclude Include="main_view.h">
       <Filter>src\gui</Filter>
     </ClInclude>
-    <ClInclude Include="cpu_detector.h">
-      <Filter>src\tools</Filter>
-    </ClInclude>
     <ClInclude Include="operators.h">
       <Filter>src\core</Filter>
     </ClInclude>
@@ -70,9 +64,6 @@
     </ClInclude>
     <ClInclude Include="etree.h">
       <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="sync.h">
-      <Filter>src\sync</Filter>
     </ClInclude>
     <ClInclude Include="sts.h">
       <Filter>src\tools</Filter>
@@ -113,9 +104,6 @@
       <Filter>src\draw</Filter>
     </ClCompile>
     <ClCompile Include="tools.cpp">
-      <Filter>src\tools</Filter>
-    </ClCompile>
-    <ClCompile Include="cpu_detector.cpp">
       <Filter>src\tools</Filter>
     </ClCompile>
     <ClCompile Include="operators.cpp">

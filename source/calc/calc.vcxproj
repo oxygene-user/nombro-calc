@@ -52,7 +52,6 @@
     <ClInclude Include="calc.h" />
     <ClInclude Include="canvas.h" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="cpu_detector.h" />
     <ClInclude Include="etree.h" />
     <ClInclude Include="fsys.h" />
     <ClInclude Include="resultformat.h" />
@@ -61,7 +60,6 @@
     <ClInclude Include="operators.h" />
     <ClInclude Include="sts.h" />
     <ClInclude Include="surface.h" />
-    <ClInclude Include="sync.h" />
     <ClInclude Include="tools.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="pch.h" />
@@ -74,7 +72,6 @@
     <ClCompile Include="calc.cpp" />
     <ClCompile Include="canvas.cpp" />
     <ClCompile Include="config.cpp" />
-    <ClCompile Include="cpu_detector.cpp" />
     <ClCompile Include="etree.cpp" />
     <ClCompile Include="fsys.cpp" />
     <ClCompile Include="main_view.cpp" />

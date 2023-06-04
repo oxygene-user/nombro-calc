@@ -22,6 +22,8 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <mutex>
+#include <shared_mutex>
 
 #include "tools.h"
 #include "calc.h"
