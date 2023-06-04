@@ -1,5 +1,5 @@
 # oxid-calc
-Powerfull programmer's calculator
+Powerful programmer's calculator
 
 - Big numbers with unlimited precission
 - Mutithreaded calculation
