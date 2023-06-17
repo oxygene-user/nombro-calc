@@ -465,6 +465,17 @@ namespace math
         return helpers::getminmax<is_signed<T1>::value, is_signed<T2>::value, T1, T2>::getmin(x1, x2);
 	}
 
+	template < typename T > INLINE T nmax(const T& x, const T& y)
+	{
+		return x >= y ? x : y;
+	}
+
+	template < typename T > INLINE T nmin(const T& x, const T& y)
+	{
+		return x <= y ? x : y;
+	}
+
+
 #ifdef _MSC_VER
 #ifdef MODE64
 	__forceinline void mul100add(udouble &d, usingle z) // d = d * 100 + z

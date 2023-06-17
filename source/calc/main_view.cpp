@@ -167,13 +167,14 @@ MainView::~MainView()
 	return handled;
 }
 
-/*virtual*/ void MainView::on_char(wchar_t c)
+/*virtual*/ void MainView::on_char(wchar_t c, bool batch)
 {
     // route any chars to InputView
 	if (input_view)
 	{
-		input_view->on_char(c);
-		input_view->activate();
+		input_view->on_char(c, batch);
+		if (!batch)
+			input_view->activate();
 	}
 }
 

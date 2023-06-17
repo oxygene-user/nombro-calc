@@ -145,7 +145,9 @@ class op_exp : public op
 		value x0;
         usingle n = 0;
 		signed_t precision = 5;
+		signed_t comparetail = math::minimum<signed_t>::value;
 		bool negx = false;
+		bool compint = true;
 
 		exp_context(u8 ct): context(ct), an(1,0), x(errset::CALCULATING)
 		{
@@ -167,6 +169,18 @@ class op_exp : public op
 		{
 			if (x.error() == errset::CALCULATING || x.compare(xx, prec) != 0)
 				reset(xx);
+		}
+
+		signed_t calccomparetail() const
+		{
+			if (compint && comparetail != math::minimum<signed_t>::value)
+			{
+				signed_t isz = math::nmax((signed_t)s.get_core()->integer.size(), (signed_t)x0.get_core()->integer.size());
+				return comparetail - isz - 2; // always rollback 2 digits to be sure all doing right
+			}
+			else
+				return comparetail;
+
 		}
 	};
 

@@ -833,11 +833,27 @@ public:
 		return 0;
 	}
 
-	signed_t compare(const value &ov) const // calc eqsz: <0 - not equals, 0 - equals in part, >0 num 100based digits equal in frac part, >= 1000000 - absolutly equals
+	signed_t compare_tail(const value &ov, signed_t from = math::minimum<signed_t>::value) const // calc eqsz: <0 - not equals, 0 - equals in part, >0 num 100based digits equal in frac part, >= 1000000 - absolutly equals
 	{
-		signed_t mi = -max((signed_t)core->integer.size(), (signed_t)ov.core->integer.size());
-		signed_t ma = max(core->frac.size(), ov.core->frac.size());
-		for (; mi < ma; ++mi)
+		signed_t mi = math::nmax(from, -math::nmax((signed_t)core->integer.size(), (signed_t)ov.core->integer.size()));
+		signed_t ma = math::nmax(core->frac.size(), ov.core->frac.size());
+
+		if (mi >= 0)
+		{
+			// compare just frac part
+
+			frac_t& f1 = core->frac;
+			frac_t& f2 = ov.core->frac;
+			const u8* s1 = f1.data() + mi;
+			const u8* e1 = f1.data() + ma;
+			const u8* s2 = f2.data() + mi;
+			for (; s1 < e1; ++s1, ++s2, ++mi)
+			{
+				if (*s1 != *s2)
+					return mi;
+			}
+
+		} else for (; mi < ma; ++mi)
 		{
 			u8 v1 = core->getu8(mi);
 			u8 v2 = ov.core->getu8(mi);

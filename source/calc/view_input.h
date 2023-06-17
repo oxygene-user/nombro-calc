@@ -51,13 +51,15 @@ protected:
 		return hexview;
 	}
 
+	void move_cursor(signed_t delta, bool by_words);
+
 public:
     InputView(bool read_only);
     virtual ~InputView();
     /*virtual*/ void draw(Canvas &canvas) override;
     /*virtual*/ void created() override;
     /*virtual*/ bool on_key(int vk, bool down) override;
-    /*virtual*/ void on_char(wchar_t c) override;
+    /*virtual*/ void on_char(wchar_t c, bool batch) override;
     /*virtual*/ void on_lbm(const int2& p, bool down) override;
     /*virtual*/ void on_mm(const int2&) override;
     /*virtual*/ bool on_mout(const int2&) override;

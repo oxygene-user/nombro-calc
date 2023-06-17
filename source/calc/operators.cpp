@@ -152,7 +152,7 @@ volatile unsigned char op::calctag = 0;
 		t = tn;
 		p = pn;
 
-		signed_t eqd = a.compare(b);
+		signed_t eqd = a.compare_tail(b);
 		if (eqd>=precision)
 			break;
 	}
@@ -179,7 +179,7 @@ value op_e::calc_e(signed_t precision)
 		acc = acc + s;
 		acc.clamp_frac(precision+1);
 
-		signed_t eqv = pacc.compare(acc);
+		signed_t eqv = pacc.compare_tail(acc);
 		if (eqv >= precision)
 			break;
 
@@ -377,7 +377,17 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 
 		if (ectx->n > 20)
 		{
-			signed_t eqsz = ectx->s.compare(ectx->x0);
+			signed_t eqsz = ectx->s.compare_tail(ectx->x0, ectx->calccomparetail());
+			if (eqsz >= 0)
+			{
+				ectx->compint = false;
+				ectx->comparetail = eqsz;
+			}
+			else
+			{
+				signed_t isz = math::nmax((signed_t)ectx->s.get_core()->integer.size(), (signed_t)ectx->x0.get_core()->integer.size()) + eqsz;
+				ectx->comparetail = isz;
+			}
 			if (eqsz >= ectx->precision + 2)
 			{
 				++ectx->n;
@@ -442,7 +452,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
         {
 			//&& lctx->s.compare(lctx->ps, lctx->precision + 2) == 0
 
-			signed_t eqsz = lctx->s.compare(lctx->ps);
+			signed_t eqsz = lctx->s.compare_tail(lctx->ps);
 			if (eqsz >= lctx->precision + 2)
 			{
 				lctx->n += 2;

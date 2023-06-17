@@ -297,7 +297,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return 1;
     case WM_CHAR:
         if (SystemWindowView *w = get_view(hWnd))
-            w->on_char((wchar_t)wParam);
+            w->on_char((wchar_t)wParam, false);
         break;
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:

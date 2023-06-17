@@ -108,10 +108,13 @@ void InputView::on_text_changed()
 
     if (!hexview)
     {
+        std::vector<bool> expandhere;
 		auto expand = [&](signed_t z)
 		{
-			for (; z < (signed_t)szperchar.size(); ++z)
-				szperchar[z] += 3;
+            expandhere.resize(szperchar.size());
+            expandhere[z] = true;
+			//for (; z < (signed_t)szperchar.size(); ++z)
+				//szperchar[z] += 3;
 		};
 
 		signed_t ne = -1;
@@ -167,6 +170,18 @@ void InputView::on_text_changed()
 					expand(x);
             }
 		}
+
+        if (expandhere.size() > 0)
+        {
+			int acc = 0;
+			for (signed_t z = 0; z < (signed_t)szperchar.size(); ++z)
+			{
+				if (expandhere[z])
+					acc += 3;
+				szperchar[z] += acc;
+			}
+        }
+
     }
 }
 
@@ -275,11 +290,13 @@ void InputView::paste()
 			{
 				if (!p[i + 1])
 					quiet = false;
-				on_char(p[i]);
+				on_char(p[i], true);
 			}
 			GlobalUnlock(hg);
 		}
 		CloseClipboard();
+
+        on_char(0, false);
 	}
 
 }
@@ -339,6 +356,42 @@ wchar_t InputView::view_to_char(wchar_t c) const
 }
 
 
+void InputView::move_cursor(signed_t delta, bool by_words)
+{
+    if (by_words)
+    {
+        for (;;)
+        {
+			cursor += delta;
+
+            if (cursor < 0)
+            {
+                cursor = 0;
+                return;
+            }
+            if (cursor > (signed_t)buffer.length())
+            {
+                cursor = (signed_t)buffer.length();
+                return;
+            }
+
+            wchar_t c = buffer[cursor];
+            if (c == '.' || c == ' ')
+                break;
+        }
+
+
+        return;
+    }
+
+	cursor += delta;
+	if (cursor < 0)
+		cursor = 0;
+	if (cursor > (signed_t)buffer.length())
+		cursor = (signed_t)buffer.length();
+
+}
+
 
 /*virtual*/ bool InputView::on_key(int vk, bool down)
 {
@@ -383,6 +436,7 @@ wchar_t InputView::view_to_char(wchar_t c) const
         if (down)
         {
             bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) == 0x8000;
+            bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) == 0x8000;
 
             if (shift && selected < 0)
                 selected = cursor;
@@ -395,15 +449,14 @@ wchar_t InputView::view_to_char(wchar_t c) const
                     invld = true;
                 selected = -1;
             }
-            ++cursor;
-            if (cursor > (signed_t)buffer.length())
-                cursor = (signed_t)buffer.length();
+            move_cursor(1,ctrl);
         }
         break;
     case VK_LEFT:
         if (down)
         {
             bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) == 0x8000;
+            bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) == 0x8000;
 
             if (shift && selected < 0)
                 selected = cursor;
@@ -417,9 +470,7 @@ wchar_t InputView::view_to_char(wchar_t c) const
                     invld = true;
                 selected = -1;
             }
-            --cursor;
-            if (cursor < 0)
-                cursor = 0;
+			move_cursor(-1, ctrl);
         }
         break;
     case VK_HOME:
@@ -528,8 +579,16 @@ wchar_t InputView::view_to_char(wchar_t c) const
 	return handled;
 }
 
-/*virtual*/ void InputView::on_char(wchar_t c)
+/*virtual*/ void InputView::on_char(wchar_t c, bool batch)
 {
+    if (c == 0)
+    {
+		on_text_changed();
+		start_cursor_animation_cycle();
+		invalidate();
+        return;
+    }
+
 	c = char_to_view(c);
 
     if (c != 0)
@@ -552,9 +611,13 @@ wchar_t InputView::view_to_char(wchar_t c) const
         {
             buffer.insert(buffer.begin() + cursor++, c);
         }
-		on_text_changed();
-		start_cursor_animation_cycle();
-		invalidate();
+
+        if (!batch)
+		{
+			on_text_changed();
+			start_cursor_animation_cycle();
+			invalidate();
+        }
 	}
 }
 
@@ -759,6 +822,7 @@ void CalculatorInputView::colorize_ramka(errset e)
 	{
     case errset::OK:
     case errset::EMPTY:
+    case errset::INF:
         calculated = true;
 		set_ramka_color(0xff008000);
 		break;

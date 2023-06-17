@@ -123,7 +123,7 @@ public:
     virtual void on_destroy();
     virtual void on_poschange(const int4 &newposnsize);
 	virtual bool on_key(int /*vk*/, bool /*down*/) { return false; }
-    virtual void on_char(wchar_t /*char*/) {}
+    virtual void on_char(wchar_t /*char*/, bool /*batch*/) {}
     virtual void animation_tick() {}
     virtual void on_lbm(const int2&, bool /*down*/) {}
     virtual void on_mm(const int2&) {}
