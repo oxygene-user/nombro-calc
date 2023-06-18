@@ -15,6 +15,8 @@ Powerful programmer's calculator
 - truncate fraction part (int), get fraction part (frac)
 - constant pi (pi), constant e (e)
 
+# screenshots
+
 # build
 Use Visual Studio 2022 to build
 
