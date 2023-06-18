@@ -54,6 +54,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="etree.h" />
     <ClInclude Include="fsys.h" />
+    <ClInclude Include="logger.h" />
     <ClInclude Include="resultformat.h" />
     <ClInclude Include="str_helpers.h" />
     <ClInclude Include="main_view.h" />
@@ -74,6 +75,7 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="etree.cpp" />
     <ClCompile Include="fsys.cpp" />
+    <ClCompile Include="logger.cpp" />
     <ClCompile Include="main_view.cpp" />
     <ClCompile Include="operators.cpp" />
     <ClCompile Include="pch.cpp">

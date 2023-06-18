@@ -21,6 +21,9 @@
     <Filter Include="src\core">
       <UniqueIdentifier>{8b4e9a58-edd7-4575-935b-d07cc95448da}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\debug">
+      <UniqueIdentifier>{fc7b5c7a-de7a-4793-af7b-db88a26bc984}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calc.h">
@@ -77,6 +80,9 @@
     <ClInclude Include="resultformat.h">
       <Filter>src\core</Filter>
     </ClInclude>
+    <ClInclude Include="logger.h">
+      <Filter>src\debug</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="calc.cpp">
@@ -124,8 +130,11 @@
     <ClCompile Include="resultformat.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
+    <ClCompile Include="logger.cpp">
+      <Filter>src\debug</Filter>
+    </ClCompile>
     <ClCompile Include="tests.cpp">
-      <Filter>src</Filter>
+      <Filter>src\debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

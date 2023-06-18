@@ -947,7 +947,7 @@ void ResultView::set_result_expression(ptr::shared_ptr<calculating_value> rslt)
             if (!r.epreparsed.empty())
             {
 				r.calcmachine->set_var(cfg.c_result, result);
-                result = r.calcmachine->start_eval(r.epreparsed, r.precision / 2 + 1);
+                result = r.calcmachine->start_eval(r.epreparsed, (r.precision+1) / 2);
             }
             showradix = r.radix;
             showprec = r.precision;
@@ -982,7 +982,10 @@ bool ResultView::show()
         e = r.error();
 
         if (e == errset::OK)
-			nvs = r.to_string(showradix, showprec);
+        {
+            r.round((showprec+1)/2);
+            nvs = r.to_string(showradix, showprec);
+        }
         else if (e == errset::INF)
         {
             if (!is_hexview())

@@ -29,6 +29,7 @@ public:
 	{
 	public:
 		u8 calctag;
+		bool used = false;
 		context(u8 ct) :calctag(ct) {}
 		virtual ~context() {}
 	};
@@ -41,6 +42,8 @@ public:
 	virtual calc_result_t calc(const std::vector<value>& /*calculated_params*/, signed_t /*precision*/, context*) const { ERRORM(__FILE__, __LINE__, "calc not defined"); return { value(), true }; };
 	virtual void mutate(operator_node*) const {};
     virtual std::wstring_view name() const = 0;
+	virtual const char* d_name() const = 0;
+	
 	virtual context *create_context(u8 ct) const { return new context(ct); }
 
     typedef std::vector<std::unique_ptr<op>> allops;
@@ -73,6 +76,8 @@ public:
     {
         return std::wstring_view(L"\u00d7", 1);
     }
+	/*virtual*/ const char* d_name() const override { return "mul"; }
+
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 1 && pnumpostf == 1;
@@ -89,10 +94,8 @@ public:
 
 	/*virtual*/ void mutate(operator_node*) const;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return WSTR("^");
-	}
+	/*virtual*/ std::wstring_view name() const override { return WSTR("^"); }
+	/*virtual*/ const char* d_name() const override { return "pow"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 1 && pnumpostf == 1;
@@ -107,10 +110,8 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return std::wstring_view(L"\u00f7", 1);
-	}
+	/*virtual*/ std::wstring_view name() const override { return std::wstring_view(L"\u00f7", 1); }
+	/*virtual*/ const char* d_name() const override { return "div"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 1 && pnumpostf == 1;
@@ -125,16 +126,49 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return WSTR("sqrt");
-	}
+	/*virtual*/ std::wstring_view name() const override { return WSTR("sqrt"); }
+	/*virtual*/ const char* d_name() const override { return "sqrt"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 0 && pnumpostf == 1;
 	}
 
 	static value calc_sqrt(const value& v, signed_t precision);
+};
+
+class op_int : public op
+{
+public:
+
+	op_int() :op(PRECEDENCE_FUNC) {}
+
+	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
+
+	/*virtual*/ std::wstring_view name() const override { return WSTR("int"); }
+	/*virtual*/ const char* d_name() const override { return "int"; }
+
+	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
+	{
+		return pnumpref == 0 && pnumpostf == 1;
+	}
+};
+
+class op_frac : public op
+{
+public:
+
+	op_frac() :op(PRECEDENCE_FUNC) {}
+
+	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
+
+	/*virtual*/ std::wstring_view name() const override { return WSTR("frac"); }
+	/*virtual*/ const char* d_name() const override { return "frac"; }
+
+	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
+	{
+		return pnumpref == 0 && pnumpostf == 1;
+	}
+
 };
 
 class op_exp : public op
@@ -169,6 +203,8 @@ class op_exp : public op
 		{
 			if (x.error() == errset::CALCULATING || x.compare(xx, prec) != 0)
 				reset(xx);
+
+			precision = prec; // TODO: semiresult
 		}
 
 		signed_t calccomparetail() const
@@ -190,16 +226,16 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return WSTR("exp");
-	}
+	/*virtual*/ std::wstring_view name() const override { return WSTR("exp"); }
+	/*virtual*/ const char* d_name() const override { return "exp"; }
 
 	virtual context *create_context(u8 ct) const { return new exp_context(ct); }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 0 && pnumpostf == 1;
 	}
+
+	/*virtual*/ void mutate(operator_node*) const;
 };
 
 class op_ln : public op
@@ -226,7 +262,7 @@ class op_ln : public op
 				if (x.compare(maxx, 0) < 0)
 					break;
 
-				x = op_sqrt::calc_sqrt(x, precision*4);
+				x = op_sqrt::calc_sqrt(x, precision*16);
 				postmul = postmul + postmul;
 			}
 
@@ -245,6 +281,8 @@ class op_ln : public op
         {
             if (z.error() == errset::CALCULATING || z.compare(iz, prec) != 0)
                 reset(iz, prec);
+
+			precision = prec; // TODO: semiresult
         }
     };
 
@@ -254,10 +292,9 @@ public:
 
     /*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-    /*virtual*/ std::wstring_view name() const override
-    {
-        return WSTR("ln");
-    }
+    /*virtual*/ std::wstring_view name() const override { return WSTR("ln"); }
+	/*virtual*/ const char* d_name() const override { return "ln"; }
+
     virtual context *create_context(u8 ct) const { return new ln_context(ct); }
     virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
     {
@@ -274,10 +311,8 @@ public:
 
     /*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-    /*virtual*/ std::wstring_view name() const override
-    {
-        return WSTR("+");
-    }
+    /*virtual*/ std::wstring_view name() const override { return WSTR("+"); }
+	/*virtual*/ const char* d_name() const override { return "plus"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 1 && pnumpostf == 1;
@@ -291,10 +326,8 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return std::wstring_view(L"\u2212", 1);
-	}
+	/*virtual*/ std::wstring_view name() const override { return std::wstring_view(L"\u2212", 1); }
+	/*virtual*/ const char* d_name() const override { return "minus"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref <= 1 && pnumpostf == 1;
@@ -308,10 +341,9 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return WSTR("<<");
-	}
+	/*virtual*/ std::wstring_view name() const override { return WSTR("<<"); }
+	/*virtual*/ const char* d_name() const override { return "shl"; }
+
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 1 && pnumpostf == 1;
@@ -326,10 +358,8 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return WSTR(">>");
-	}
+	/*virtual*/ std::wstring_view name() const override { return WSTR(">>"); }
+	/*virtual*/ const char* d_name() const override { return "shr"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 1 && pnumpostf == 1;
@@ -344,10 +374,8 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return WSTR("pi");
-	}
+	/*virtual*/ std::wstring_view name() const override { return WSTR("pi"); }
+	/*virtual*/ const char* d_name() const override { return "pi"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 0 && pnumpostf == 0;
@@ -362,10 +390,8 @@ public:
 
 	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
 
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return WSTR("e");
-	}
+	/*virtual*/ std::wstring_view name() const override { return WSTR("e"); }
+	/*virtual*/ const char* d_name() const override { return "e"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 0 && pnumpostf == 0;

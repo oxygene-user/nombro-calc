@@ -59,6 +59,7 @@ volatile unsigned char op::calctag = 0;
 
 /*virtual*/ calc_result_t op_mul::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
 {
+
 	if (calculated_params[0].is_infinity() || calculated_params[1].is_infinity())
 	{
 		if (calculated_params[0].is_zero() || calculated_params[1].is_zero())
@@ -82,10 +83,16 @@ volatile unsigned char op::calctag = 0;
 	signed_t prec = prc1 + prc2;
 	if (prec > precision)
 	{
-		prec = precision;
+		//prec = precision;
 		fna = true;
 	}
-	return { (calculated_params[0] * calculated_params[1]).round(prec, fna), true };
+
+	value res = calculated_params[0] * calculated_params[1];
+	res.clamp_frac(prec, fna);
+
+	ASSERT(res.get_precision() != value::P_UNDEFINED);
+
+	return { res, true };
 }
 
 
@@ -115,8 +122,8 @@ volatile unsigned char op::calctag = 0;
 
 
 	value rv;
-	calculated_params[0].calc_div(rv, calculated_params[1], precision + 10);
-	rv.round(precision);
+	calculated_params[0].calc_div(rv, calculated_params[1], precision * 2);
+	//rv.round(precision);
 	return { rv, true };
 }
 
@@ -161,8 +168,8 @@ volatile unsigned char op::calctag = 0;
 	value otvet;
 	p = four * t;
 	a = ab * ab;
-	a.calc_div(otvet, p, precision);
-	otvet.clamp_frac(precision);
+	a.calc_div(otvet, p, precision * 2);
+	//otvet.clamp_frac(precision);
 	return { otvet, true };
 }
 
@@ -211,7 +218,7 @@ value heron_sqrt(const value& a, signed_t precision)
 	}
 	for (;;)
 	{
-		x0.calc_inverse(invx0, precision + 10);
+		x0.calc_inverse(invx0, precision * 2);
 		value x1 = ((invx0 * a) + x0) * half;
 
 		if (x1.compare(x0, precision) == 0)
@@ -221,7 +228,7 @@ value heron_sqrt(const value& a, signed_t precision)
 		//std::wstring s2 = x0.to_string();
 
 		x0 = x1;
-		x0.clamp_frac(precision + 10);
+		x0.clamp_frac(precision * 2);
 	}
 	return x0;
 }
@@ -277,7 +284,17 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	if (calculated_params[0].is_infinity())
 		return { calculated_params[0], true };
 
-	return { calc_sqrt(calculated_params[0], precision).round(precision), true };
+	return { calc_sqrt(calculated_params[0], precision * 2), true };
+}
+
+/*virtual*/ calc_result_t op_int::calc(const std::vector<value>& calculated_params, signed_t /*precision*/, context* /*ctx*/) const
+{
+	return { calculated_params[0].clone_int(), true};
+}
+
+/*virtual*/ calc_result_t op_frac::calc(const std::vector<value>& calculated_params, signed_t /*precision*/, context* /*ctx*/) const
+{
+	return { calculated_params[0].clone_frac(), true };
 }
 
 /*virtual*/ calc_result_t op_exp::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
@@ -289,6 +306,8 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 
 	if (x.is_zero())
 		return { value(1,0), true };
+
+	exp_context* ectx = (exp_context*)ctx;
 
 	usingle ix;
 	if (x.is_zero_frac() && x.to_unsigned(ix))
@@ -302,18 +321,36 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 
 		for (; ix != 0; ix >>= 1)
 		{
+			if (ectx->calctag != op::calctag)
+				return { value(), true };
+
 			if (0 != (ix & 1))
 			{
 				rslt = rslt * e;
-				rslt.clamp_frac(precision + 10);
+				rslt.clamp_frac(precision * 2);
 
 				if (ix == 1)
 					break;
 
 			}
 			e = e * e;
-			e.clamp_frac(precision + 10);
+			e.clamp_frac(precision * 2);
+
+			if (e.int_size() * 2 > cfg.get_maxnum())
+			{
+				return { value(errset::RESULT_OVERFLOW), true };
+			}
+
 		}
+
+		if (x.is_negative())
+		{
+			value r;
+			rslt.calc_inverse(r, precision * 2);
+			rslt = r;
+		}
+
+		ASSERT(rslt.get_precision() != value::P_UNDEFINED);
 
 		return { rslt, true };
 	}
@@ -357,7 +394,6 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	if (value::P_ABSOLUTE == maxprecision)
 		maxprecision = MAX_PRECISION;
 
-	exp_context *ectx = (exp_context *)ctx;
 	ectx->check_reset(x, precision);
 
     //value t = ectx->an;
@@ -385,8 +421,14 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 			}
 			else
 			{
-				signed_t isz = math::nmax((signed_t)ectx->s.get_core()->integer.size(), (signed_t)ectx->x0.get_core()->integer.size()) + eqsz;
+				signed_t ipa = math::nmax((signed_t)ectx->s.get_core()->integer.size(), (signed_t)ectx->x0.get_core()->integer.size());
+				if (ipa * 2 > cfg.get_maxnum())
+				{
+					return { value(errset::RESULT_OVERFLOW), true};
+				}
+				signed_t isz = ipa + eqsz;
 				ectx->comparetail = isz;
+
 			}
 			if (eqsz >= ectx->precision + 2)
 			{
@@ -403,18 +445,61 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 				if (ectx->negx)
 				{
 					value r;
-					ectx->x0.calc_inverse(r, p + 10);
-					r.round(p);
+					ectx->x0.calc_inverse(r, p * 2);
+					if (!maxprec)
+						r.round(p);
+					else
+						r.clamp_frac(p * 2);
+
+					ASSERT(r.get_precision() != value::P_UNDEFINED);
 					return { r, maxprec };
 				}
-				ectx->x0.round(p);
-				
+				if (!maxprec)
+					ectx->x0.round(p);
+				else
+					ectx->x0.clamp_frac(p*2);
+
+				ASSERT(ectx->x0.get_precision() != value::P_UNDEFINED);
+
 				return { ectx->x0, maxprec };
 			}
 		}
 
 		ectx->x0 = ectx->s;
 	}
+}
+
+/*virtual*/ void op_exp::mutate(operator_node* mynode) const
+{
+	ASSERT(dynamic_cast<const op_exp*>(mynode->op) != nullptr);
+
+	// replace node as below for faster calculations
+	// exp x => exp (int x) * exp (frac x)
+
+	mynode->params[0]->mutate();
+
+	operator_node* makeint = new operator_node(OP(op_int));
+	makeint->add_par(mynode->params[0], false);
+	makeint->mutate();
+	
+	operator_node* exp1 = new operator_node(OP(op_exp));
+	exp1->add_par(ptr::shared_ptr<node>(makeint), false);
+	exp1->mutated = true; // mark it already mutated due this node should not be mutated
+
+	operator_node* makefrac = new operator_node(OP(op_frac));
+	makefrac->add_par(mynode->params[0], false);
+	makefrac->mutate();
+
+	operator_node* exp2 = new operator_node(OP(op_exp));
+	exp2->add_par(ptr::shared_ptr<node>(makefrac), false);
+	exp2->mutated = true; // mark it already mutated due this node should not be mutated
+
+	mynode->op = OP(op_mul);
+	mynode->params.clear();
+	mynode->add_par(ptr::shared_ptr<node>(exp1), true);
+	mynode->add_par(ptr::shared_ptr<node>(exp2), false);
+	mynode->mutate();
+
 }
 
 /*virtual*/ calc_result_t op_ln::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
@@ -444,7 +529,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
         //lctx->xx = lctx->xx * lctx->x2;
 		value::mul(lctx->xx, lctx->xx, lctx->x2);
         value el;
-        lctx->xx.calc_div(el, lctx->n, precision+10);
+        lctx->xx.calc_div(el, lctx->n, precision*2);
 		lctx->xx.clamp_frac(precision*2);
 		lctx->s = lctx->s + el;
         
@@ -466,8 +551,10 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 					lctx->precision = MAX_PRECISION;
 
 				value r = (lctx->s + lctx->s) * lctx->postmul; // x2
-				r.round(p);
-
+				if (!maxprec)
+					r.round(p);
+				else
+					r.clamp_frac(p * 2);
 				return { r, maxprec };
 			}
 
@@ -531,6 +618,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 		return { value(1,0).bypass(), true};
 	}
 
+	bool neg = y.is_negative();
 
 	// y is integer, so we can simple multiply x by x y times
 
@@ -552,6 +640,14 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	{
 		if (iy == 1)
 		{
+
+			if (neg)
+			{
+				value invx;
+				x.calc_inverse(invx, precision * 2);
+				return { invx.bypass(), true };
+			}
+
 			return { x.bypass(), true };
 		}
 
@@ -560,12 +656,18 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 			if (0 != (iy & 1))
 			{
 				rslt = rslt * x;
-				rslt.clamp_frac(precision + 10);
+				rslt.clamp_frac(precision * 2);
 				if (iy == 1)
 					break;
 			}
 			x = x * x;
-			x.clamp_frac(precision + 10);
+			x.clamp_frac(precision * 2);
+
+			if (x.int_size() * 2 > cfg.get_maxnum())
+			{
+				return { value(errset::RESULT_OVERFLOW), true };
+			}
+
 		}
 	}
 	else
@@ -575,15 +677,29 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 			if (0 != (y.get_core()->getu8(-1) & 1))
 			{
 				rslt = rslt * x;
-				rslt.clamp_frac(precision + 10);
+				rslt.clamp_frac(precision*2);
 			}
 			x = x * x;
-			x.clamp_frac(precision + 10);
+			x.clamp_frac(precision*2);
+
+			if (x.int_size() * 2 > cfg.get_maxnum())
+			{
+				return { value(errset::RESULT_OVERFLOW), true };
+			}
+
 		}
 	}
 
+	if (neg)
+	{
+		value invx;
+		rslt.calc_inverse(invx, precision*2);
+		rslt = invx;
+	}
+
+
 	//rslt.clamp_frac(precision);
-	rslt.round(precision);
+	//rslt.round(precision);
 	return { rslt.bypass(), true };
 
 }
@@ -597,12 +713,12 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	// replace node as below
 	// x ^ y => exp (y * ln x)
 
-	// как это работает:
-	// текущий нод мутирует в нод по формуле (см. выше)
-	// однако, если y целочисленный, в формуле нет необходимости
-	// поэтому, если op_pow отработает по целочисленному варианту
-	// то ствой результат пометит как BYPASS, тогда вычислитель
-	// проведет такой результат сразу на выход
+	// how it works:
+	// the current node mutates into a node according to the formula (see above)
+	// however, if y is an integer, the formula is not needed
+	// therefore, if op_pow works on an integer variant
+	// then mark its result as BYPASS, then the calculation engine
+	// will pass such a result immediately to the output
 
 	// lets mutate params now
 	mynode->params[0]->mutate();
@@ -645,6 +761,9 @@ const op::allops &op::all()
         ops.emplace_back(new op_ln());
 		ops.emplace_back(new op_sqrt());
 		ops.emplace_back(new op_exp());
+
+		ops.emplace_back(new op_int());
+		ops.emplace_back(new op_frac());
 		
 		ops.emplace_back(new op_pow());
 		ops.emplace_back(new op_div());

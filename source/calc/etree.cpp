@@ -92,6 +92,13 @@ namespace
 						goto get_final_bypass_loop;
 					}
 
+					if (vv.error() != errset::OK)
+					{
+						z->set_final_result(vv);
+						return;
+					}
+
+
 					ASSERT(vv.get_precision() != value::P_UNDEFINED);
 
 					if (z->is_released() || globalstop || z->calctag != op::calctag)
@@ -111,7 +118,23 @@ namespace
 					cparams[i++] = vv;
 				}
 
-				calc_result_t r = z->op->calc(cparams, z->precision, ctx.get());
+				::op::context* cx = ctx.get();
+#ifdef LOGGER
+				if (cx == nullptr || !cx->used)
+				{
+					lg.rec() << z->op->d_name() << cparams;
+				}
+#endif
+				calc_result_t r = z->op->calc(cparams, z->precision, cx);
+				if (cx != nullptr)
+					cx->used = true;
+
+#ifdef LOGGER
+				if (std::get<1>(r))
+				{
+					lg.rec() << z->op->d_name() << "result" << std::get<0>(r); // << (std::get<1>(r) ? "final" : "temp");
+				}
+#endif
 
 				if (z->unmark_bypass && std::get<0>(r).error() == errset::BYPASS)
 					std::get<0>(r).unbypass();
@@ -709,8 +732,8 @@ ptr::shared_ptr<node> etree::parse(const std::wstring_view &expression)
 				{
 					if (heap[i]->absorb(heap, i))
 					{
-						break;
 						absorbing = true;
+						break;
 					}
 
 				}

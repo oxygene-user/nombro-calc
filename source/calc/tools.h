@@ -16,6 +16,9 @@ typedef ptrdiff_t signed_t;
 #include <intrin.h>
 #include <sstream>
 #include <string>
+
+#include "logger.h"
+
 #include "str_helpers.h"
 
 #define ONEBIT(x) (static_cast<size_t>(1)<<(x))

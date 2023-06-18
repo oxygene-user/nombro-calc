@@ -8,6 +8,8 @@
     CP( bool, wmax, false, " // window is max" ) \
     CP( string, savepath, L".", "// save config path (. means this config)" ) \
     CP( int, precision, 100, " // calculation precision (in digits)" ) \
+    CP( int, maxnum, 10000, " // maximum digits of integer part of answer" ) \
+    CP( int, calctimeout, 2000, " // calculation timeout" ) \
 
 
 #define RFS \

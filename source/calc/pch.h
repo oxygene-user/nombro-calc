@@ -8,6 +8,10 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 #define _ALLOW_RTCc_IN_STL
 
+#ifdef _DEBUG
+#define LOGGER
+#endif
+
 // Windows Header Files
 #include <windows.h>
 #include <mmsystem.h>

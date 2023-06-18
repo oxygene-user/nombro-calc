@@ -16,6 +16,8 @@ std::wstring error_text(errset er)
 		return std::wstring(TRS("wrong symbols in expression"));
 	case errset::EXPRESSION_TOO_BIG:
 		return std::wstring(TRS("expression too big"));
+	case errset::RESULT_OVERFLOW:
+		return std::wstring(TRS("overflow"));
 	case errset::PARENTHESIS_FAIL:
 		return std::wstring(TRS("parenthesis mismatch"));
 	case errset::NUMBER_NOT_RECOGNIZED:
@@ -256,7 +258,7 @@ value operator-(const value &vv1, const value &vv2)
 value &value::round(signed_t cprec, bool force_not_absolute)
 {
 	clamp_frac(cprec, force_not_absolute);
-	if ((signed_t)core->frac.size() >= cprec)
+	if (cprec > 0 && (signed_t)core->frac.size() >= cprec)
 	{
 		bool r99 = true;
         signed_t i = cprec - 1;

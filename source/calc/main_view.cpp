@@ -249,8 +249,15 @@ errset MainView::calc_show_answer(const std::wstring_view &buf)
 		{
 			result = new calculating_value(errset::EMPTY);
 			empt = true;
-		} else
-			result = parsed.evaluate(buf, cfg.get_precision()/2+1, true );
+		}
+		else
+		{
+#ifdef LOGGER
+			lg.reset();
+#endif
+
+			result = parsed.evaluate(buf, cfg.get_precision() / 2 + 1, true);
+		}
 
 		for (ResultView* view : answers)
 			view->set_result_expression(empt ? nullptr : result);

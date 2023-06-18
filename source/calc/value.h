@@ -13,6 +13,7 @@ enum class errset
     BAD_ARGS_NUM,
     BAD_SYMBOLS_IN_EXPRESION,
     EXPRESSION_TOO_BIG,
+	RESULT_OVERFLOW,
 	PARENTHESIS_FAIL, // problem with brackets
     NUMBER_NOT_RECOGNIZED,
     UNKNOWN_RADIX,
@@ -557,6 +558,8 @@ public:
 private:
     ptr::shared_ptr<value_core> core;
 
+	value(value_core *c) :core(c) {}
+
 public:
     value(errset e = errset::OK, bool neg = false) { core = new value_core(e, neg); }
     value(const value &v):core(v.core) {}
@@ -618,6 +621,15 @@ public:
 				core = core->clone(0);
 			core->error = errset::OK;
 		}
+	}
+
+	value clone_int() const
+	{
+		return value(core->clone(CO_CLEAR_FRAC));
+	}
+	value clone_frac() const
+	{
+		return value(core->clone(CO_CLEAR_INT));
 	}
 
 	value &round(signed_t cprec, bool force_not_absolute = false);
@@ -993,7 +1005,7 @@ public:
 	calculating_value(errset e = errset::CALCULATING)
 	{
 		val = value(e);
-		if (e == errset::OK)
+		if (e == errset::OK || e == errset::INF)
 			final_result_ready = true;
 	}
 	calculating_value(const value &v)
