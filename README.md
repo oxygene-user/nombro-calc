@@ -9,10 +9,11 @@ Powerful programmer's calculator
 
 # supported operators
 
-- plus (+), minus (-), multiply (*), divide (/)
+- plus (+), minus (-), multiply (*), divide (/), mod (\)
 - shift left (<<), shift right (>>)
 - power (^), square root (sqrt), natural logarithm (ln), exponential function (exp)
 - truncate fraction part (int), get fraction part (frac)
+- sine (sin), cosine (cos), tangent (tan), angle norm (anorm)
 - constant pi (pi), constant e (e)
 
 # screenshots
