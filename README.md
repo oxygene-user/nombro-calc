@@ -16,6 +16,8 @@ Powerful programmer's calculator
 - constant pi (pi), constant e (e)
 
 # screenshots
+![Screen 1](https://github.com/oxygene-user/oxid-calc/blob/main/screens/screen-1.png?raw=true)
+
 
 # build
 Use Visual Studio 2022 to build
