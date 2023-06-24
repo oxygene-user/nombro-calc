@@ -19,7 +19,7 @@ struct ResultFormat
 
 	ResultFormat();
 	ResultFormat(const wsts& s);
-	ResultFormat(ResultFormat&& of)
+	ResultFormat(ResultFormat&& of) noexcept
 	{
 		id = std::move(of.id);
 		expression = std::move(of.expression);

@@ -984,7 +984,8 @@ bool ResultView::show()
 
         if (e == errset::OK)
         {
-            r.round((showprec+1)/2);
+            if (showprec >= 0)
+                r.round((showprec+1)/2);
             nvs = r.to_string(showradix, showprec);
         }
         else if (e == errset::INF)

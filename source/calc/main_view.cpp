@@ -102,6 +102,9 @@ MainView::~MainView()
 	int y = hpadding + ivh + hpadding;
 	for (ResultFormat& r : cfg.get_results())
 	{
+		if (!r.active)
+			continue;
+
 		ptr::shared_ptr<ResultView> iv = new ResultView(r.fmt_id);
 		answers.push_back(iv);
 		add_view(iv, new Position(new AbsolutePVal(10), new AbsolutePVal(y), new PaddingPVal(10), new AbsolutePVal(y + ivh)));

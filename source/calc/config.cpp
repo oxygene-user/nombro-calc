@@ -86,6 +86,14 @@ void Config::load(const std::wstring& fn, usingle options)
 			rb1.set(WSTR("precision")).set_value(100);
 			rb1.set(WSTR("placeholder")).set_value(WSTR("Result"));
 
+			wsts& rb1e = r.add_block();
+			rb1e.set(c_id).set_value(WSTR("exp"));
+			rb1e.set(WSTR("expression")).set_value(c_empty);
+			rb1e.set(WSTR("radix")).set_value(10);
+			rb1e.set(WSTR("precision")).set_value(-10);
+			rb1e.add_comment(WSTR("// negatitve precision means exponential notation"));
+			rb1e.set(WSTR("placeholder")).set_value(WSTR("Exponential notation"));
+
 			wsts& rb2 = r.add_block();
 			rb2.set(c_id).set_value(WSTR("hex"));
 			rb2.set(WSTR("expression")).set_value(c_empty);

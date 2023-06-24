@@ -207,14 +207,74 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 		outs.push_back('0');
 	else
 		::to_string(outs, integer);
+
+	bool expon = false;
+	if (prc < 0)
+	{
+		signed_t isz = outs.length(); if (negative) --isz;
+		if (isz >= -prc)
+		{
+			signed_t s = (negative ? 2 : 1);
+			if (outs[s - 1] == '0')
+			{
+				outs.erase(outs.begin() + (s - 1));
+				--isz;
+			}
+			outs.insert(outs.begin() + s, L'.');
+			signed_t tr = s - prc;
+			outs.resize(tr);
+			outs.append(WSTR("E+"));
+			outs.append(std::to_wstring(isz-1));
+			return outs;
+		}
+		prc = -prc;
+		expon = true;
+	}
 	
     if (frac.size() > 0)
     {
         outs.push_back('.');
-        ::to_string(outs, frac, prc);
+		signed_t sf = outs.length();
+        ::to_string(outs, frac, expon ? (1000) : prc);
         size_t lci = outs.size() - 1;
         while (outs[lci] == '0') --lci;
         outs.resize(lci + 1);
+
+		if (expon && (outs.length()-sf) > prc)
+		{
+			signed_t s = (negative ? 2 : 1);
+			if (outs[s] == '0' && outs[s - 1] == '0')
+			{
+				outs.erase(outs.begin() + (s - 1));
+				--sf;
+			}
+
+			if (outs[s] == '.' && outs[s - 1] == '0')
+			{
+				signed_t numz = 0;
+				for (signed_t x = sf, xx = outs.length(); x < xx; ++x)
+					if (outs[x] == '0') ++numz; else break;
+
+				if (numz >= 1)
+				{
+					// enough zeros
+
+					outs.erase(negative ? 1 : 0, numz+1);
+					if (s + prc < outs.size())
+						outs.resize(s + prc+1);
+					outs.insert(outs.begin() + s, L'.');
+					outs.append(WSTR("E-"));
+					outs.append(std::to_wstring(numz));
+					return outs;
+				}
+			}
+		}
+
+		if (expon && (outs.length() - sf) > prc)
+		{
+			outs.resize(sf + prc);
+		}
+
     }
 
 	signed_t j = i;
