@@ -5,233 +5,6 @@ volatile unsigned char op::calctag = 0;
 //static op_sys_remove_bypass opsys_remove_bypass;
 
 
-/*virtual*/ calc_result_t op_plus::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
-{
-	if (calculated_params[0].is_infinity() && calculated_params[1].is_infinity())
-	{
-		bool neg0 = calculated_params[0].is_negative();
-		if (neg0 != calculated_params[1].is_negative())
-			return { value(errset::BAD_ARGUMENT), true };
-
-		return { value(errset::INF, neg0), true };
-	}
-
-	if (calculated_params[0].is_infinity())
-		return { calculated_params[0], true };
-
-	if (calculated_params[1].is_infinity())
-		return { calculated_params[1], true };
-
-
-	return { (calculated_params[0] + calculated_params[1]).clamp_frac(precision), true };
-}
-
-/*virtual*/ calc_result_t op_minus::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
-{
-	if (calculated_params.size() == 1)
-	{
-		if (calculated_params[0].is_infinity())
-			return { value(errset::INF, !calculated_params[0].is_negative()), true };
-
-		value rv(calculated_params[0]);
-		return { rv.minus().clamp_frac(precision), true };
-	}
-
-	if (calculated_params[0].is_infinity() && calculated_params[1].is_infinity())
-	{
-		bool neg0 = calculated_params[0].is_negative();
-		if (neg0 == calculated_params[1].is_negative())
-			return { value(errset::BAD_ARGUMENT), true };
-
-		return { value(errset::INF, neg0), true };
-	}
-
-
-	if (calculated_params[0].is_infinity())
-		return { calculated_params[0], true };
-
-	if (calculated_params[1].is_infinity())
-		return { value(errset::INF, !calculated_params[1].is_negative()), true};
-
-	return { (calculated_params[0] - calculated_params[1]).clamp_frac(precision), true };
-}
-
-
-/*virtual*/ calc_result_t op_mul::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
-{
-
-	if (calculated_params[0].is_infinity() || calculated_params[1].is_infinity())
-	{
-		if (calculated_params[0].is_zero() || calculated_params[1].is_zero())
-			return { value(errset::BAD_ARGUMENT), true };
-
-		bool same_sign = calculated_params[0].is_negative() == calculated_params[1].is_negative();
-		return { value(errset::INF, !same_sign), true };
-	}
-
-	bool fna = false;
-	signed_t prc1 = calculated_params[0].get_precision();
-	ASSERT(prc1 != value::P_UNDEFINED);
-	if (prc1 == value::P_ABSOLUTE) prc1 = calculated_params[0].frac_size();
-	else fna = true;
-
-	signed_t prc2 = calculated_params[1].get_precision();
-	ASSERT(prc2 != value::P_UNDEFINED);
-	if (prc2 == value::P_ABSOLUTE) prc2 = calculated_params[1].frac_size();
-	else fna = true;
-
-	signed_t prec = prc1 + prc2;
-	if (prec > precision)
-	{
-		//prec = precision;
-		fna = true;
-	}
-
-	value res = calculated_params[0] * calculated_params[1];
-	res.clamp_frac(prec, fna);
-
-	ASSERT(res.get_precision() != value::P_UNDEFINED);
-
-	return { res, true };
-}
-
-
-/*virtual*/ calc_result_t op_div::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
-{
-	if (calculated_params[0].is_infinity())
-	{
-		if (calculated_params[1].is_infinity())
-			return { value(errset::BAD_ARGUMENT), true };
-
-		bool same_sign = calculated_params[0].is_negative() == calculated_params[1].is_negative();
-		return { value(errset::INF, !same_sign), true };
-	}
-
-	if (calculated_params[1].is_infinity())
-	{
-		return { value(), true }; // return zero
-	}
-
-	if (calculated_params[1].is_zero())
-	{
-		if (calculated_params[0].is_zero())
-			return { value(errset::BAD_ARGUMENT), true };
-
-		return { value(errset::INF, calculated_params[0].is_negative()), true };
-	}
-
-
-	value rv;
-	calculated_params[0].calc_div(rv, calculated_params[1], precision * 2);
-	//rv.round(precision);
-	return { rv, true };
-}
-
-/*virtual*/ calc_result_t op_pi::calc(const std::vector<value>& /*calculated_params*/, signed_t precision, context* /*ctx*/) const
-{
-	// https://en.wikipedia.org/wiki/Gauss%E2%80%93Legendre_algorithm
-
-	value a(1,0); // 1
-	value b(2,0);
-	value tmp = op_sqrt::calc_sqrt(b, precision + 20);
-	tmp.calc_inverse(b, precision + 20); // b <- 1/sqrt(2)
-	value t(0, 25); // 0.25
-	value p(1,0);
-	value two(2,0);
-	value four(4,0);
-	value half(0, 50);
-
-	for (;;)
-	{
-		value an = (a + b) * half; // an <- (a+b)/2;
-		value bn = op_sqrt::calc_sqrt(a * b, precision + 20);
-		value ann = a - an;
-		value tn = t - p * ann * ann;
-		value pn = p * two;
-
-		an.clamp_frac(precision+5);
-		bn.clamp_frac(precision + 5);
-		tn.clamp_frac(precision + 5);
-		pn.clamp_frac(precision + 5);
-
-		a = an;
-		b = bn;
-		t = tn;
-		p = pn;
-
-		signed_t eqd = a.compare_tail(b);
-		if (eqd>=precision)
-			break;
-	}
-
-	value ab = a + b;
-	value otvet;
-	p = four * t;
-	a = ab * ab;
-	a.calc_div(otvet, p, precision * 2);
-	//otvet.clamp_frac(precision);
-	return { otvet, true };
-}
-
-value op_e::calc_e(signed_t precision)
-{
-	value d(24,0);
-	value f(5,0);
-	value acc(2, 66, precision+1);
-	value pacc;
-	for (;;)
-	{
-		value s;
-		d.calc_inverse(s, precision + 20);
-		acc = acc + s;
-		acc.clamp_frac(precision+1);
-
-		signed_t eqv = pacc.compare_tail(acc);
-		if (eqv >= precision)
-			break;
-
-		d = d * f;
-		f.add(1);
-		pacc = acc;
-	}
-	return acc;
-}
-
-/*virtual*/ calc_result_t op_e::calc(const std::vector<value>& /*calculated_params*/, signed_t precision, context* /*ctx*/) const
-{
-	return { calc_e(precision), true};
-}
-
-value heron_sqrt(const value& a, signed_t precision)
-{
-	value half(0, 50);
-	value x0, invx0;
-	usingle z;
-	if (a.to_unsigned(z))
-	{
-		u64 zz = math::dround(sqrt((double)z));
-		x0.set_unsigned(zz + 1);
-	}
-	else
-	{
-		x0 = a * value(0, 10);
-	}
-	for (;;)
-	{
-		x0.calc_inverse(invx0, precision * 2);
-		value x1 = ((invx0 * a) + x0) * half;
-
-		if (x1.compare(x0, precision) == 0)
-			break;
-
-		//std::wstring s1 = x1.to_string();
-		//std::wstring s2 = x0.to_string();
-
-		x0 = x1;
-		x0.clamp_frac(precision * 2);
-	}
-	return x0;
-}
 
 value bakhshali_sqrt(const value& x, signed_t precision)
 {
@@ -269,6 +42,37 @@ value bakhshali_sqrt(const value& x, signed_t precision)
 	return x0;
 }
 
+value heron_sqrt(const value& a, signed_t precision)
+{
+	value half(0, 50);
+	value x0, invx0;
+	usingle z;
+	if (a.to_unsigned(z))
+	{
+		u64 zz = math::dround(sqrt((double)z));
+		x0.set_unsigned(zz + 1);
+	}
+	else
+	{
+		x0 = a * value(0, 10);
+	}
+	for (;;)
+	{
+		x0.calc_inverse(invx0, precision * 2);
+		value x1 = ((invx0 * a) + x0) * half;
+
+		if (x1.compare(x0, precision) == 0)
+			break;
+
+		//std::wstring s1 = x1.to_string();
+		//std::wstring s2 = x0.to_string();
+
+		x0 = x1;
+		x0.clamp_frac(precision * 2);
+	}
+	return x0;
+}
+
 
 value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 {
@@ -285,16 +89,6 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 		return { calculated_params[0], true };
 
 	return { calc_sqrt(calculated_params[0], precision * 2), true };
-}
-
-/*virtual*/ calc_result_t op_int::calc(const std::vector<value>& calculated_params, signed_t /*precision*/, context* /*ctx*/) const
-{
-	return { calculated_params[0].clone_int(), true};
-}
-
-/*virtual*/ calc_result_t op_frac::calc(const std::vector<value>& calculated_params, signed_t /*precision*/, context* /*ctx*/) const
-{
-	return { calculated_params[0].clone_frac(), true };
 }
 
 /*virtual*/ calc_result_t op_exp::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
@@ -755,6 +549,7 @@ const op::allops &op::all()
     static allops ops;
     if (ops.size() == 0)
     {
+		// consts
 		ops.emplace_back(new op_pi());
 		ops.emplace_back(new op_e());
 
@@ -762,13 +557,20 @@ const op::allops &op::all()
 		ops.emplace_back(new op_sqrt());
 		ops.emplace_back(new op_exp());
 
+		// helpers
 		ops.emplace_back(new op_int());
 		ops.emplace_back(new op_frac());
-		
+		ops.emplace_back(new op_anorm());
+
 		ops.emplace_back(new op_pow());
+		ops.emplace_back(new op_sin());
+		ops.emplace_back(new op_cos());
+		ops.emplace_back(new op_tan());
+
+		// base
 		ops.emplace_back(new op_div());
         ops.emplace_back(new op_mul());
-		
+		ops.emplace_back(new op_mod());
 		ops.emplace_back(new op_minus());
 		ops.emplace_back(new op_plus());
 

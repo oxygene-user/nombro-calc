@@ -293,6 +293,19 @@ value &value::round(signed_t cprec, bool force_not_absolute)
             }
         }
 	}
+	signed_t clamp = -1;
+	for (signed_t i = core->frac.size() - 1; i >= 0; --i)
+	{
+		if (core->frac[i] == 0)
+			clamp = i;
+		else break;
+	}
+	if (clamp >= 0)
+		core->frac.resize(clamp);
+	if (is_zero() && is_negative())
+		set_negative(false);
+
+
 	return *this;
 }
 
@@ -533,6 +546,13 @@ bool value::to_unsigned(usingle &r) const
 
 void value::calc_div(value &rslt, const value &divider, signed_t precision) const
 {
+	// check equals
+	if (equals(divider))
+	{
+		rslt = value(1, 0);
+		return;
+	}
+
 	usingle val;
 	if (divider.is_zero_frac() && divider.to_unsigned(val)) // simple case: divider is integer (frac part is empty)
 	{
@@ -543,7 +563,7 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 	}
 
 	signed_t fsz = divider.frac_size();
-	if (fsz + divider.int_size() <= 10) // hardest case: remove frac part by multiply by 100 frac_size times
+	if (fsz + divider.int_size() <= 20) // hardest case: remove frac part by multiply by 100 frac_size times
 	{
 		value d(divider);
 		d.mul_by_100(fsz); // remove frac part
@@ -561,7 +581,7 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 	// common case - multiply by inversed divider
 
 	value invv;
-	divider.calc_inverse(invv, precision + 10);
+	divider.calc_inverse(invv, precision*2);
 	rslt = *this * invv;
 	rslt.clamp_frac(precision);
 }

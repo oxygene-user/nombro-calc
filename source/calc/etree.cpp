@@ -92,7 +92,7 @@ namespace
 						goto get_final_bypass_loop;
 					}
 
-					if (vv.error() != errset::OK)
+					if (vv.is_error())
 					{
 						z->set_final_result(vv);
 						return;
@@ -202,7 +202,7 @@ namespace
 		{
 			for (auto& n : params)
 			{
-				pcparams.emplace_back(n.get()->evaluate(precision + 10));
+				pcparams.emplace_back(n.get()->evaluate(precision));
 			}
 			std::thread th( calc_thread, this );
 			th.detach();

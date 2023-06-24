@@ -827,6 +827,22 @@ public:
 		return !is_infinity() && is_zero_int() && is_zero_frac();
 	}
 
+	bool equals(const value& ov) const
+	{
+		signed_t mi = -max((signed_t)core->integer.size(), (signed_t)ov.core->integer.size());
+		signed_t ma = max(core->frac.size(), ov.core->frac.size());
+		for (; mi < ma; ++mi)
+		{
+			u8 v1 = core->getu8(mi);
+			u8 v2 = ov.core->getu8(mi);
+			if (v1 > v2)
+				return false;
+			if (v1 < v2)
+				return false;
+		}
+		return true;
+	}
+
 	signed_t compare(const value &ov, signed_t precision) const
 	{
 		signed_t mi = -max((signed_t)core->integer.size(), (signed_t)ov.core->integer.size());
@@ -1081,7 +1097,12 @@ public:
 };
 
 
-
+INLINE signed_t optimal_precision(signed_t vp, signed_t rp)
+{
+	if (vp == value::P_ABSOLUTE)
+		return rp * 2;
+	return math::minv(vp, rp * 2);
+}
 
 
 

@@ -473,10 +473,12 @@ namespace math
 		return x >= y ? x : y;
 	}
 
+    /*
 	template < typename T > INLINE T nmin(const T& x, const T& y)
 	{
 		return x <= y ? x : y;
 	}
+    */
 
 
 #ifdef _MSC_VER

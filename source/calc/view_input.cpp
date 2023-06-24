@@ -334,6 +334,7 @@ wchar_t InputView::char_to_view(wchar_t c) const
 	case ' ':
     case '#':
     case '$':
+    case '\\':
 		return c;
 	default:
 		break;

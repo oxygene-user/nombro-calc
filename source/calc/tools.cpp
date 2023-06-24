@@ -22,7 +22,7 @@ public:
 
 static tools_init ti;
 
-bool messagebox(const char* s1, const char* s2, int options)
+bool messagebox(const char* /*s1*/, const char* /*s2*/, int /*options*/)
 {
     // TODO : show message box for main thread
 

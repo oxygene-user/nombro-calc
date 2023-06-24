@@ -3,7 +3,6 @@
 typedef std::tuple<value, bool> calc_result_t;
 struct operator_node;
 
-
 #define OP(opt) op::findop<opt>()
 
 class op
@@ -64,25 +63,11 @@ public:
 
 };
 
-class op_mul : public op
-{
-public:
 
-	op_mul() :op(PRECEDENCE_MULT) {}
-
-    /*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
-
-    /*virtual*/ std::wstring_view name() const override
-    {
-        return std::wstring_view(L"\u00d7", 1);
-    }
-	/*virtual*/ const char* d_name() const override { return "mul"; }
-
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref == 1 && pnumpostf == 1;
-	}
-};
+#include "op_base.h"
+#include "op_constants.h"
+#include "op_helpers.h"
+#include "op_trigonometry.h"
 
 class op_pow : public op
 {
@@ -96,22 +81,6 @@ public:
 
 	/*virtual*/ std::wstring_view name() const override { return WSTR("^"); }
 	/*virtual*/ const char* d_name() const override { return "pow"; }
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref == 1 && pnumpostf == 1;
-	}
-};
-
-class op_div : public op
-{
-public:
-
-	op_div() :op(PRECEDENCE_MULT) {}
-
-	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
-
-	/*virtual*/ std::wstring_view name() const override { return std::wstring_view(L"\u00f7", 1); }
-	/*virtual*/ const char* d_name() const override { return "div"; }
 	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
 	{
 		return pnumpref == 1 && pnumpostf == 1;
@@ -134,41 +103,6 @@ public:
 	}
 
 	static value calc_sqrt(const value& v, signed_t precision);
-};
-
-class op_int : public op
-{
-public:
-
-	op_int() :op(PRECEDENCE_FUNC) {}
-
-	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
-
-	/*virtual*/ std::wstring_view name() const override { return WSTR("int"); }
-	/*virtual*/ const char* d_name() const override { return "int"; }
-
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref == 0 && pnumpostf == 1;
-	}
-};
-
-class op_frac : public op
-{
-public:
-
-	op_frac() :op(PRECEDENCE_FUNC) {}
-
-	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
-
-	/*virtual*/ std::wstring_view name() const override { return WSTR("frac"); }
-	/*virtual*/ const char* d_name() const override { return "frac"; }
-
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref == 0 && pnumpostf == 1;
-	}
-
 };
 
 class op_exp : public op
@@ -303,36 +237,6 @@ public:
 };
 
 
-class op_plus : public op
-{
-public:
-	op_plus() :op(PRECEDENCE_PLUS) {}
-
-
-    /*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
-
-    /*virtual*/ std::wstring_view name() const override { return WSTR("+"); }
-	/*virtual*/ const char* d_name() const override { return "plus"; }
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref == 1 && pnumpostf == 1;
-	}
-};
-
-class op_minus : public op
-{
-public:
-	op_minus() :op(PRECEDENCE_PLUS) {}
-
-	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
-
-	/*virtual*/ std::wstring_view name() const override { return std::wstring_view(L"\u2212", 1); }
-	/*virtual*/ const char* d_name() const override { return "minus"; }
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref <= 1 && pnumpostf == 1;
-	}
-};
 
 class op_shiftleft : public op
 {
@@ -366,76 +270,3 @@ public:
 	}
 };
 
-class op_pi : public op
-{
-public:
-
-	op_pi() :op(PRECEDENCE_CONST) {}
-
-	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
-
-	/*virtual*/ std::wstring_view name() const override { return WSTR("pi"); }
-	/*virtual*/ const char* d_name() const override { return "pi"; }
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref == 0 && pnumpostf == 0;
-	}
-};
-
-class op_e : public op
-{
-public:
-
-	op_e() :op(PRECEDENCE_CONST) {}
-
-	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
-
-	/*virtual*/ std::wstring_view name() const override { return WSTR("e"); }
-	/*virtual*/ const char* d_name() const override { return "e"; }
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return pnumpref == 0 && pnumpostf == 0;
-	}
-
-	static value calc_e(signed_t precision);
-};
-
-
-
-#if 0
-// op sys
-class op_sys : public op
-{
-	/*virtual*/ std::wstring_view name() const override
-	{
-		return std::wstring_view();
-	}
-	virtual bool is_valid_param(size_t pnumpref, size_t pnumpostf) const override
-	{
-		return false;
-	}
-};
-
-class op_sys_remove_bypass : public op_sys
-{
-public:
-
-	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override
-	{
-		if (calculated_params.size() != 1)
-			return { value(errset::BAD_ARGS_NUM), true };
-
-		bool maxresult = calculated_params[0].get_precision() == value::P_ABSOLUTE || calculated_params[0].get_precision() >= precision;
-
-		if (calculated_params[0].error() == errset::BYPASS)
-		{
-			value v(calculated_params[0]);
-			v.unbypass();
-			return { v, maxresult };
-		}
-
-		return { calculated_params[0], maxresult };
-	}
-
-};
-#endif
