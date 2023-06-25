@@ -109,7 +109,17 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 		value e = op_e_c::calc_e(precision + 10);
 
 		if (ix == 1)
+		{
+			if (x.is_negative())
+			{
+				value r;
+				e.calc_inverse(r, precision * 2);
+				e = r;
+			}
+			//e.clamp_frac(precision);
+			ASSERT(e.get_precision() != value::P_UNDEFINED);
 			return { e, true };
+		}
 
 		value rslt(1, 0);
 
