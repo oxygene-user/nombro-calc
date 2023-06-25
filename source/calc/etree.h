@@ -115,7 +115,7 @@ struct operator_node : public node
 	/*virtual*/ std::wstring info(int ots) override
 	{
 		std::wstring s(L"op: ");
-		s.append(op->name()).append(L", ").append(std::to_wstring(params.size())).append(L" par(s)\r\n");
+		s.append(op->name).append(L", ").append(std::to_wstring(params.size())).append(L" par(s)\r\n");
 		int pn = 1;
 		for (auto n : params)
 		{

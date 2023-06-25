@@ -1,6 +1,6 @@
 #include "pch.h"
 
-/*virtual*/ calc_result_t op_plus::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_plus_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
 	if (calculated_params[0].is_infinity() && calculated_params[1].is_infinity())
 	{
@@ -21,17 +21,8 @@
 	return { (calculated_params[0] + calculated_params[1]).clamp_frac(precision), true };
 }
 
-/*virtual*/ calc_result_t op_minus::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_minus_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
-	if (calculated_params.size() == 1)
-	{
-		if (calculated_params[0].is_infinity())
-			return { value(errset::INF, !calculated_params[0].is_negative()), true };
-
-		value rv(calculated_params[0]);
-		return { rv.minus().clamp_frac(precision), true };
-	}
-
 	if (calculated_params[0].is_infinity() && calculated_params[1].is_infinity())
 	{
 		bool neg0 = calculated_params[0].is_negative();
@@ -51,8 +42,18 @@
 	return { (calculated_params[0] - calculated_params[1]).clamp_frac(precision), true };
 }
 
+/*virtual*/ calc_result_t op_neg_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+{
+	if (calculated_params[0].is_infinity())
+		return { value(errset::INF, !calculated_params[0].is_negative()), true };
 
-/*virtual*/ calc_result_t op_mul::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+	value rv(calculated_params[0]);
+	return { rv.minus().clamp_frac(precision), true };
+
+}
+
+
+/*virtual*/ calc_result_t op_mul_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
 
 	if (calculated_params[0].is_infinity() || calculated_params[1].is_infinity())
@@ -91,7 +92,7 @@
 }
 
 
-/*virtual*/ calc_result_t op_div::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_div_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
 	if (calculated_params[0].is_infinity())
 	{
@@ -123,7 +124,7 @@
 }
 
 
-value op_mod::calc_mod(const value& v, const value& m)
+value op_mod_c::calc_mod(const value& v, const value& m)
 {
 	value rem;
 	v.calc_div(rem, m, 1);
@@ -133,7 +134,7 @@ value op_mod::calc_mod(const value& v, const value& m)
 	return v - (rem * m);
 }
 
-/*virtual*/ calc_result_t op_mod::calc(const std::vector<value>& calculated_params, signed_t /*precision*/, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_mod_c::calc(const std::vector<value>& calculated_params, signed_t /*precision*/, context* /*ctx*/) const
 {
 	if (calculated_params[0].is_infinity() || calculated_params[1].is_infinity() || calculated_params[1].is_negative() || calculated_params[1].is_zero())
 	{

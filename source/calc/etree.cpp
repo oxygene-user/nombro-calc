@@ -1,30 +1,5 @@
 #include "pch.h"
 
-/*
-namespace
-{
-	template<class _Ty> struct releaser
-	{	// default deleter for unique_ptr
-		typedef releaser<_Ty> _Myt;
-
-		releaser()
-		{	// default construct
-		}
-
-		template<class _Ty2> releaser(const releaser<_Ty2>&)
-		{	// construct from another default_delete
-		}
-
-		void operator()(_Ty *_Ptr) const
-		{	// delete a pointer
-			if constexpr (0 < sizeof(_Ty))	// won't compile for incomplete type
-				_Ptr->release();
-		}
-	};
-
-}
-*/
-
 /*virtual*/ ptr::shared_ptr<calculating_value> operator_node::evaluate(signed_t precision)
 {
 	struct ntu
@@ -219,7 +194,7 @@ namespace
 errset operator_node::check()
 {
 
-	size_t pre = 0, post = 0;
+	uhalf pre = 0, post = 0;
 	for (const auto &n : params)
 	{
 		if (n->is_error())
@@ -230,7 +205,7 @@ errset operator_node::check()
 			++post;
 	}
 
-	if (!op->is_valid_param(pre, post))
+	if (!op->reqpars(pre, post))
 		return errset::BAD_ARGS_NUM;
 
 	return errset::OK;
@@ -256,12 +231,12 @@ static bool is_letter(wchar_t c)
 		op* op = o.get();
 		size_t from = 0;
 		sag:
-		size_t i = str.find(o->name(), from);
+		size_t i = str.find(o->name, from);
 		if (i == str.npos)
 			continue;
 		while (op->bigger)
 		{
-			if (str.substr(i)._Starts_with(op->bigger->name()))
+			if (str.substr(i)._Starts_with(op->bigger->name))
 			{
 				op = op->bigger;
 				continue;
@@ -270,14 +245,14 @@ static bool is_letter(wchar_t c)
 		}
 
 		
-		if (is_letter(op->name()[0]))
+		if (is_letter(op->name[0]))
 		{
 			if (i > 0 && is_letter(str[i - 1]))
 			{
 				from = i + 1;
 				goto sag;
 			}
-			if (i + op->name().length() < str.length() && is_letter(str[i + op->name().length()]))
+			if (i + op->name.length() < str.length() && is_letter(str[i + op->name.length()]))
 			{
 				from = i + 1;
 				goto sag;
@@ -299,7 +274,7 @@ static bool is_letter(wchar_t c)
 				++myindex;
 			}
 		}
-		str.erase(0, i+op->name().length()); // and fix current string node
+		str.erase(0, i+op->name.length()); // and fix current string node
 		tools::trim(str);
 		if (str.empty())
 		{
@@ -501,7 +476,7 @@ static bool is_letter(wchar_t c)
 		{
 			if (!on->prepared())
 			{
-				if (on->op->is_valid_param(0, 1) && size_t(index + 2) < heap.size())
+				if (on->op->reqpars(0, 1) && size_t(index + 2) < heap.size())
 				{
 					on->add_par(heap[index+2], false);
 					heap.erase(heap.begin() + index + 2);
@@ -523,7 +498,7 @@ static bool is_letter(wchar_t c)
 
 	if (heap.size() == 1)
 	{
-		if (!op->is_valid_param(0, 0))
+		if (!op->reqpars(0, 0))
 		{
 			heap.clear();
 			heap.emplace_back(new value_node(value(errset::BAD_ARGS_NUM)));
@@ -535,10 +510,10 @@ static bool is_letter(wchar_t c)
 
 	if (index == 0)
 	{
-		if (op->is_valid_param(0, 1))
+		if (op->reqpars(0, 1))
 			return addparnext() && heap.size() > 1;
 
-		if (op->is_valid_param(0, 0))
+		if (op->reqpars(0, 0))
 		{
 			prp = true;
 			return true;
@@ -551,14 +526,14 @@ static bool is_letter(wchar_t c)
 
 	if (size_t(index + 1) == heap.size())
 	{
-		if (op->is_valid_param(1, 0))
+		if (op->reqpars(1, 0))
 		{
 			add_par(heap[index-1], true);
 			heap.erase(heap.begin()+index-1);
 			return heap.size() > 1;
 		}
 
-		if (op->is_valid_param(0, 0))
+		if (op->reqpars(0, 0))
 		{
 			prp = true;
 			return true;
@@ -572,7 +547,7 @@ static bool is_letter(wchar_t c)
 	// so operator is not 1st and not last in heap
 	// middle
 
-	if (op->is_valid_param(1, 1))
+	if (op->reqpars(1, 1))
 	{
 		// can absorb left and right
 		add_par(heap[index - 1], true);
@@ -580,14 +555,34 @@ static bool is_letter(wchar_t c)
 			heap.erase(heap.begin() + index - 1);
 		return heap.size() > 1;
 	}
+	else {
+		node* pn = heap[index - 1].get();
+		if (dynamic_cast<value_node*>(pn) != nullptr)
+		{
+			if (op->synonym != nullptr && op->synonym->reqpars(1, 1))
+			{
+				// so, synonym can accept value at left
+				op = op->synonym;
+				return true;
+			}
+		} else if (dynamic_cast<operator_node*>(pn) != nullptr)
+		{
+			operator_node* on = (operator_node*)pn;
+			if (on->prp && op->synonym != nullptr && op->synonym->reqpars(1, 1))
+			{
+				op = op->synonym;
+				return true;
+			}
+		}
+	}
 
-	if (op->is_valid_param(0, 1))
+	if (op->reqpars(0, 1))
 	{
 		// can absorb only right
 		return addparnext();
 	}
 
-	if (op->is_valid_param(1, 0))
+	if (op->reqpars(1, 0))
 	{
 		// can absorb only left
 		add_par(heap[index - 1], false);
@@ -595,7 +590,7 @@ static bool is_letter(wchar_t c)
 		return true;
 	}
 
-	if (op->is_valid_param(0, 0))
+	if (op->reqpars(0, 0))
 	{
 		// can absorb nothing
 		prp = true;
@@ -742,21 +737,6 @@ ptr::shared_ptr<node> etree::parse(const std::wstring_view &expression)
 
 		if (absorbing)
 			continue;
-
-		if (heap.size() >= 1)
-		{
-			if (operator_node* on = dynamic_cast<operator_node*>(heap[0].get()))
-			{
-				if (!on->prepared() && dynamic_cast<const op_minus*>(on->op) != nullptr)
-				{
-					if (on->absorb(heap, 0))
-					{
-						absorbing = true;
-						continue;
-					}
-				}
-			}
-		}
 
 		signed_t index = -1;
 		signed_t preced = op::PRECEDENCE_LOWEST;

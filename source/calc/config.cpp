@@ -115,10 +115,13 @@ void Config::load(const std::wstring& fn, usingle options)
 	}
 
 
-
+#pragma warning (push)
+#pragma warning (disable:4244)
 #define CP( t, field, dv, c ) field = conf.get_##t(__STR1W__(field), dv);
 	CFGPARS
 #undef CP
+#pragma warning (pop)
+
 
 	if (primary)
 		results.clear();

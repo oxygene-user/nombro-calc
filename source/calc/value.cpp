@@ -240,7 +240,7 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
         while (outs[lci] == '0') --lci;
         outs.resize(lci + 1);
 
-		if (expon && (outs.length()-sf) > prc)
+		if (expon && ((signed_t)outs.length()-sf) > prc)
 		{
 			signed_t s = (negative ? 2 : 1);
 			if (outs[s] == '0' && outs[s - 1] == '0')
@@ -260,7 +260,7 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 					// enough zeros
 
 					outs.erase(negative ? 1 : 0, numz+1);
-					if (s + prc < outs.size())
+					if (s + prc < (signed_t)outs.size())
 						outs.resize(s + prc+1);
 					outs.insert(outs.begin() + s, L'.');
 					outs.append(WSTR("E-"));
@@ -270,7 +270,7 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 			}
 		}
 
-		if (expon && (outs.length() - sf) > prc)
+		if (expon && ((signed_t)outs.length() - sf) > prc)
 		{
 			outs.resize(sf + prc);
 		}

@@ -91,7 +91,9 @@ struct u128
 #ifdef MODE64
 typedef u64 usingle;
 typedef u128 udouble;
+typedef u32 uhalf;
 #else
+typedef u16 uhalf;
 typedef u32 usingle;
 typedef u64 udouble;
 #endif

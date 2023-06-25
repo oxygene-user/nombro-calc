@@ -1,7 +1,7 @@
 #include "pch.h"
 
 
-value op_sin::calc_sin(const value& x, signed_t precision)
+value op_sin_c::calc_sin(const value& x, signed_t precision)
 {
 	// Taylor series
 
@@ -48,7 +48,7 @@ value op_sin::calc_sin(const value& x, signed_t precision)
 
 }
 
-/*virtual*/ calc_result_t op_sin::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_sin_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
 	if (calculated_params[0].is_infinity())
 		return { value(errset::BAD_ARGUMENT), true};
@@ -57,11 +57,11 @@ value op_sin::calc_sin(const value& x, signed_t precision)
 }
 
 
-/*virtual*/ void op_sin::mutate(operator_node* mynode) const
+/*virtual*/ void op_sin_c::mutate(operator_node* mynode) const
 {
 	//op::mutate(mynode);
 
-	ASSERT(dynamic_cast<const op_sin*>(mynode->op) != nullptr);
+	ASSERT(dynamic_cast<const op_sin_c*>(mynode->op) != nullptr);
 
 	// make formula:
 	// sin x == sin( anorm(x,pi) )
@@ -78,7 +78,7 @@ value op_sin::calc_sin(const value& x, signed_t precision)
 }
 
 
-value op_cos::calc_cos(const value& x, signed_t precision)
+value op_cos_c::calc_cos(const value& x, signed_t precision)
 {
 	// Taylor series
 
@@ -125,7 +125,7 @@ value op_cos::calc_cos(const value& x, signed_t precision)
 
 }
 
-/*virtual*/ calc_result_t op_cos::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_cos_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
 	if (calculated_params[0].is_infinity())
 		return { value(errset::BAD_ARGUMENT), true };
@@ -134,11 +134,11 @@ value op_cos::calc_cos(const value& x, signed_t precision)
 }
 
 
-/*virtual*/ void op_cos::mutate(operator_node* mynode) const
+/*virtual*/ void op_cos_c::mutate(operator_node* mynode) const
 {
 	//op::mutate(mynode);
 
-	ASSERT(dynamic_cast<const op_cos*>(mynode->op) != nullptr);
+	ASSERT(dynamic_cast<const op_cos_c*>(mynode->op) != nullptr);
 
 	// make formula:
 	// cos x == cos( anorm(x,pi) )
@@ -155,18 +155,18 @@ value op_cos::calc_cos(const value& x, signed_t precision)
 }
 
 
-/*virtual*/ calc_result_t op_tan::calc(const std::vector<value>& /*calculated_params*/, signed_t /*precision*/, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_tan_c::calc(const std::vector<value>& /*calculated_params*/, signed_t /*precision*/, context* /*ctx*/) const
 {
 	// tan never called directly
 	return { value(errset::BAD_ARGUMENT), true };
 }
 
 
-/*virtual*/ void op_tan::mutate(operator_node* mynode) const
+/*virtual*/ void op_tan_c::mutate(operator_node* mynode) const
 {
 	//op::mutate(mynode);
 
-	ASSERT(dynamic_cast<const op_tan*>(mynode->op) != nullptr);
+	ASSERT(dynamic_cast<const op_tan_c*>(mynode->op) != nullptr);
 
 	// make formula:
 	// cos x == cos( anorm(x,pi) )

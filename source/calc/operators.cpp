@@ -74,13 +74,13 @@ value heron_sqrt(const value& a, signed_t precision)
 }
 
 
-value op_sqrt::calc_sqrt(const value& a, signed_t precision)
+value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 {
 	return heron_sqrt(a, precision);
 	//return bakhshali_sqrt(a, precision); // slow
 }
 
-/*virtual*/ calc_result_t op_sqrt::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
+/*virtual*/ calc_result_t op_sqrt_c::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
 {
 	if (calculated_params[0].is_negative())
 		return { value(errset::BAD_ARGUMENT), true };
@@ -91,7 +91,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	return { calc_sqrt(calculated_params[0], precision * 2), true };
 }
 
-/*virtual*/ calc_result_t op_exp::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
+/*virtual*/ calc_result_t op_exp_c::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
 {
 	value x = calculated_params[0];
 
@@ -106,7 +106,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	usingle ix;
 	if (x.is_zero_frac() && x.to_unsigned(ix))
 	{
-		value e = op_e::calc_e(precision + 10);
+		value e = op_e_c::calc_e(precision + 10);
 
 		if (ix == 1)
 			return { e, true };
@@ -263,9 +263,9 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	}
 }
 
-/*virtual*/ void op_exp::mutate(operator_node* mynode) const
+/*virtual*/ void op_exp_c::mutate(operator_node* mynode) const
 {
-	ASSERT(dynamic_cast<const op_exp*>(mynode->op) != nullptr);
+	ASSERT(dynamic_cast<const op_exp_c*>(mynode->op) != nullptr);
 
 	// replace node as below for faster calculations
 	// exp x => exp (int x) * exp (frac x)
@@ -296,7 +296,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 
 }
 
-/*virtual*/ calc_result_t op_ln::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
+/*virtual*/ calc_result_t op_ln_c::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
 {
     value x = calculated_params[0];
 	if (x.is_negative())
@@ -360,7 +360,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 
 
 
-/*virtual*/ calc_result_t op_shiftleft::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
+/*virtual*/ calc_result_t op_shl_c::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
 {
 	value r;
 	if (calculated_params[1].is_negative())
@@ -377,7 +377,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	return { r, true };
 }
 
-/*virtual*/ calc_result_t op_shiftrite::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
+/*virtual*/ calc_result_t op_shr_c::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
 {
 	value r;
 	if (calculated_params[1].is_negative())
@@ -394,7 +394,7 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 	return { r, true };
 }
 
-/*virtual*/ calc_result_t op_pow::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
+/*virtual*/ calc_result_t op_pow_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
 	value y( calculated_params[1] );
 
@@ -498,9 +498,9 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 
 }
 
-/*virtual*/ void op_pow::mutate(operator_node* mynode) const
+/*virtual*/ void op_pow_c::mutate(operator_node* mynode) const
 {
-	ASSERT(dynamic_cast<const op_pow*>(mynode->op) != nullptr);
+	ASSERT(dynamic_cast<const op_pow_c*>(mynode->op) != nullptr);
 
 	//node *p = mynode->params[1].get();
 
@@ -543,56 +543,86 @@ value op_sqrt::calc_sqrt(const value& a, signed_t precision)
 
 ////////////////////
 
+namespace {
+
+	static const void prepop(::op *o, const std::wstring_view& defn)
+	{
+		o->name = defn;
+	}
+	static const void prepop(::op* o, const std::wstring_view& defn, const npars&np)
+	{
+		o->name = defn;
+		o->reqpars = np;
+	}
+	/*
+	static const void prepop(::op* o, const std::wstring_view& defn, const std::wstring_view& inn)
+	{
+		o->name = inn;
+	}
+	*/
+	static const void prepop(::op* o, const std::wstring_view& /*defn*/, const npars& np, const std::wstring_view& inn)
+	{
+		o->name = inn;
+		o->reqpars = np;
+	}
+
+
+	struct allinit
+	{
+		op::allops ops;
+		allinit()
+		{
+#ifdef LOGGER
+#define O(o, ...) ops[op_##o].reset(new op_##o##_c()); prepop(ops[op_##o].get(), WSTR(#o), __VA_ARGS__); ops[op_##o]->debug_name = #o;
+#else
+#define O(o) ops[op_##o].reset(new op_##o##_c()); ops[op_##o]->name = makename(WSTR(#o), __VA_ARGS__); 
+#endif
+			OPS
+#undef O
+
+			// setup bigger
+			for (auto& o1 : ops)
+			{
+				for (auto& o2 : ops)
+				{
+					if (o1.get() == o2.get())
+						continue;
+					if (o1->name._Starts_with(o2->name) && o1->name.length() > o2->name.length())
+					{
+						ASSERT(o2->bigger == nullptr); // moar then 2 ops with similar names not yet supported
+						o2->bigger = o1.get();
+					}
+				}
+			}
+
+			// setup synonyms
+			for (auto& o1 : ops)
+			{
+				for (auto& o2 : ops)
+				{
+					if (o1.get() == o2.get())
+						continue;
+
+					if (o1->name == o2->name)
+					{
+						ASSERT(o1->precedence != o2->precedence); // ops with same names MUST be different precedence
+						if (o1->precedence < o2->precedence)
+						{
+							ASSERT(o2->synonym == nullptr); // moar then 2 ops with same name not yet supported
+							o1->synonym = o2.get();
+						}
+					}
+				}
+			}
+
+		}
+	};
+
+	allinit allstatic;
+}
 
 const op::allops &op::all()
 {
-    static allops ops;
-    if (ops.size() == 0)
-    {
-		// consts
-		ops.emplace_back(new op_pi());
-		ops.emplace_back(new op_e());
-
-        ops.emplace_back(new op_ln());
-		ops.emplace_back(new op_sqrt());
-		ops.emplace_back(new op_exp());
-
-		// helpers
-		ops.emplace_back(new op_int());
-		ops.emplace_back(new op_frac());
-		ops.emplace_back(new op_anorm());
-
-		ops.emplace_back(new op_pow());
-		ops.emplace_back(new op_sin());
-		ops.emplace_back(new op_cos());
-		ops.emplace_back(new op_tan());
-
-		// base
-		ops.emplace_back(new op_div());
-        ops.emplace_back(new op_mul());
-		ops.emplace_back(new op_mod());
-		ops.emplace_back(new op_minus());
-		ops.emplace_back(new op_plus());
-
-		ops.emplace_back(new op_shiftleft());
-		ops.emplace_back(new op_shiftrite());
-
-
-        // setup bigger
-        for (auto &o1 : ops)
-        {
-            for (auto &o2 : ops)
-            {
-                if (o1.get() == o2.get())
-                    continue;
-                if (o1->name().find(o2->name(), 0) != std::wstring::npos)
-                {
-                    ASSERT(o2->bigger == nullptr);
-                    o2->bigger = o1.get();
-                }
-            }
-        }
-    }
-    return ops;
+    return allstatic.ops;
 }
 
