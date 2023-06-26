@@ -618,8 +618,8 @@ namespace {
 						ASSERT(o1->precedence != o2->precedence); // ops with same names MUST be different precedence
 						if (o1->precedence < o2->precedence)
 						{
-							ASSERT(o2->synonym == nullptr); // moar then 2 ops with same name not yet supported
-							o1->synonym = o2.get();
+							ASSERT(o2->homonym == nullptr); // moar then 2 ops with same name not yet supported
+							o1->homonym = o2.get();
 						}
 					}
 				}

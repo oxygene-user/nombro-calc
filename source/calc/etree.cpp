@@ -211,11 +211,6 @@ errset operator_node::check()
 	return errset::OK;
 }
 
-static bool is_letter(wchar_t c)
-{
-	return c >= L'a' && c <= 'z';
-}
-
 /*virtual*/ bool string_node::absorb(std::vector<ptr::shared_ptr<node>>& heap, signed_t index)
 {
 	tools::trim(str);
@@ -559,18 +554,18 @@ static bool is_letter(wchar_t c)
 		node* pn = heap[index - 1].get();
 		if (dynamic_cast<value_node*>(pn) != nullptr)
 		{
-			if (op->synonym != nullptr && op->synonym->reqpars(1, 1))
+			if (op->homonym != nullptr && op->homonym->reqpars(1, 1))
 			{
 				// so, synonym can accept value at left
-				op = op->synonym;
+				op = op->homonym;
 				return true;
 			}
 		} else if (dynamic_cast<operator_node*>(pn) != nullptr)
 		{
 			operator_node* on = (operator_node*)pn;
-			if (on->prp && op->synonym != nullptr && op->synonym->reqpars(1, 1))
+			if (on->prp && op->homonym != nullptr && op->homonym->reqpars(1, 1))
 			{
-				op = op->synonym;
+				op = op->homonym;
 				return true;
 			}
 		}

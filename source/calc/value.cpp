@@ -209,20 +209,33 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 		::to_string(outs, integer);
 
 	bool expon = false;
+
+	if (i+1 < (signed_t)outs.length() && outs[i] == '0' && is_digit(outs[i+1]))
+		outs.erase(outs.begin() + i);
+
 	if (prc < 0)
 	{
 		signed_t isz = outs.length(); if (negative) --isz;
-		if (isz >= -prc)
+		if (isz >= 0 && !(outs[i] == '0' && frac.size() > 0 && frac[0] < 10))
 		{
-			signed_t s = (negative ? 2 : 1);
-			if (outs[s - 1] == '0')
+			//if (outs[i] == '0' && outs.length() > s)
+			//{
+				//outs.erase(outs.begin() + (s - 1));
+				//--isz;
+			//}
+			outs.insert(outs.begin() + i + 1, L'.');
+			signed_t tr = i-prc+2;
+			if ((signed_t)outs.length() > tr)
+				outs.resize(tr);
+			
+			if ((signed_t)outs.length() < tr)
 			{
-				outs.erase(outs.begin() + (s - 1));
-				--isz;
+				::to_string(outs, frac, tr - outs.length());
+				if (outs[outs.length() - 1] == '0')
+					outs.resize(outs.length() - 1);
 			}
-			outs.insert(outs.begin() + s, L'.');
-			signed_t tr = s - prc;
-			outs.resize(tr);
+			if (outs[outs.length()-1]=='.')
+				outs.push_back('0');
 			outs.append(WSTR("E+"));
 			outs.append(std::to_wstring(isz-1));
 			return outs;
@@ -240,16 +253,9 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
         while (outs[lci] == '0') --lci;
         outs.resize(lci + 1);
 
-		if (expon && ((signed_t)outs.length()-sf) > prc)
+		if (expon && ((signed_t)outs.length()-sf) > 0)
 		{
-			signed_t s = (negative ? 2 : 1);
-			if (outs[s] == '0' && outs[s - 1] == '0')
-			{
-				outs.erase(outs.begin() + (s - 1));
-				--sf;
-			}
-
-			if (outs[s] == '.' && outs[s - 1] == '0')
+			if (outs[i+1] == '.' && outs[i] == '0')
 			{
 				signed_t numz = 0;
 				for (signed_t x = sf, xx = outs.length(); x < xx; ++x)
@@ -259,12 +265,12 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 				{
 					// enough zeros
 
-					outs.erase(negative ? 1 : 0, numz+1);
-					if (s + prc < (signed_t)outs.size())
-						outs.resize(s + prc+1);
-					outs.insert(outs.begin() + s, L'.');
+					outs.erase(i, numz+2);
+					if (i + prc + 1 < (signed_t)outs.size())
+						outs.resize(i + prc + 1);
+					outs.insert(outs.begin() + i+1, L'.');
 					outs.append(WSTR("E-"));
-					outs.append(std::to_wstring(numz));
+					outs.append(std::to_wstring(numz+1));
 					return outs;
 				}
 			}

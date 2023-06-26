@@ -951,6 +951,16 @@ namespace ptr
         if((last)==(el)) last=(el)->prev;\
     if((first)==(el)) (first)=(el)->next;}
 
+INLINE bool is_letter(wchar_t c)
+{
+	return c >= L'a' && c <= 'z';
+}
+
+INLINE bool is_digit(wchar_t c)
+{
+	return c >= L'0' && c <= '9';
+}
+
 #include "vec.h"
 #include "surface.h"
 #include "canvas.h"

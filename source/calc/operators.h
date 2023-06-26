@@ -84,7 +84,7 @@ public:
 
 	std::wstring_view name;
     op *bigger = nullptr; // pointer to op with bigger name (name of current op is substring of bigger)
-	op* synonym = nullptr; // synonym (op with same name but lower precedence)
+	op* homonym = nullptr; // homonym (op with same name but lower precedence)
 	signed_t precedence;
 	npars reqpars;
 
