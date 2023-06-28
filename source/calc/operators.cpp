@@ -42,10 +42,11 @@ value bakhshali_sqrt(const value& x, signed_t precision)
 	return x0;
 }
 
-value heron_sqrt(const value& a, signed_t precision)
+value heron_sqrt(const value& val, signed_t precision)
 {
 	value half(0, 50);
 	value x0, invx0;
+	value a(val); a.set_exponent(0); // temporary reset exponent
 	usingle z;
 	if (a.to_unsigned(z))
 	{
@@ -70,6 +71,14 @@ value heron_sqrt(const value& a, signed_t precision)
 		x0 = x1;
 		x0.clamp_frac(precision * 2);
 	}
+
+	if (i32 ex = val.get_exponent())
+	{
+		// so, need to correct result
+		// sqrt(x * 100^n) == sqrt(x) * 10^n;
+		x0 = x0 * op_pow_c::power( value(10,0), ex < 0, math::abs(ex), precision );
+	}
+
 	return x0;
 }
 
@@ -88,7 +97,7 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 	if (calculated_params[0].is_infinity())
 		return { calculated_params[0], true };
 
-	return { calc_sqrt(calculated_params[0], precision * 2), true };
+	return { calc_sqrt(calculated_params[0], precision).clamp_frac(precision), true };
 }
 
 /*virtual*/ calc_result_t op_exp_c::calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const
@@ -282,17 +291,21 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 
 	mynode->params[0]->mutate();
 
+	operator_node* makezeroexp = new operator_node(OP(op_Q));
+	makezeroexp->add_par(mynode->params[0], false);
+	makezeroexp->mutated = true;
+
 	operator_node* makeint = new operator_node(OP(op_int));
-	makeint->add_par(mynode->params[0], false);
-	makeint->mutate();
+	makeint->add_par(ptr::shared_ptr<node>(makezeroexp), false);
+	makeint->mutated = true;
 	
 	operator_node* exp1 = new operator_node(OP(op_exp));
 	exp1->add_par(ptr::shared_ptr<node>(makeint), false);
 	exp1->mutated = true; // mark it already mutated due this node should not be mutated
 
 	operator_node* makefrac = new operator_node(OP(op_frac));
-	makefrac->add_par(mynode->params[0], false);
-	makefrac->mutate();
+	makefrac->add_par(ptr::shared_ptr<node>(makezeroexp), false);
+	makefrac->mutated = true;
 
 	operator_node* exp2 = new operator_node(OP(op_exp));
 	exp2->add_par(ptr::shared_ptr<node>(makefrac), false);
@@ -370,38 +383,49 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 
 
 
-/*virtual*/ calc_result_t op_shl_c::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
+value op_pow_c::power(const value& ix, bool neg, usingle iy, signed_t precision)
 {
-	value r;
-	if (calculated_params[1].is_negative())
+	if (iy == 1)
 	{
-		calculated_params[0].calc_shift_rite(r, calculated_params[1]);
-	}
-	else
-	{
-		calculated_params[0].calc_shift_left(r, calculated_params[1]);
-	}
 
-	r.clamp_frac(precision);
+		if (neg)
+		{
+			value invx;
+			ix.calc_inverse(invx, precision * 2);
+			return invx;
+		}
 
-	return { r, true };
-}
-
-/*virtual*/ calc_result_t op_shr_c::calc(const std::vector<value> &calculated_params, signed_t precision, context * /*ctx*/) const
-{
-	value r;
-	if (calculated_params[1].is_negative())
-	{
-		calculated_params[0].calc_shift_left(r, calculated_params[1]);
-	}
-	else
-	{
-		calculated_params[0].calc_shift_rite(r, calculated_params[1]);
+		return ix;
 	}
 
-	r.clamp_frac(precision);
+	value rslt(1, 0);
+	value x(ix);
+	for (; iy != 0; iy >>= 1)
+	{
+		if (0 != (iy & 1))
+		{
+			rslt = rslt * x;
+			rslt.clamp_frac(precision * 2);
+			if (iy == 1)
+				break;
+		}
+		x = x * x;
+		x.clamp_frac(precision * 2);
 
-	return { r, true };
+		if (x.int_size() * 2 > cfg.get_maxnum())
+		{
+			return value(errset::RESULT_OVERFLOW);
+		}
+	}
+
+	if (neg)
+	{
+		value invx;
+		rslt.calc_inverse(invx, precision + rslt.int_size());
+		rslt = invx;
+	}
+
+	return rslt;
 }
 
 /*virtual*/ calc_result_t op_pow_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
@@ -448,7 +472,7 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 			if (neg)
 			{
 				value invx;
-				x.calc_inverse(invx, precision * 2);
+				x.calc_inverse(invx, precision + invx.int_size());
 				return { invx.bypass(), true };
 			}
 
@@ -497,7 +521,7 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 	if (neg)
 	{
 		value invx;
-		rslt.calc_inverse(invx, precision*2);
+		rslt.calc_inverse(invx, precision+rslt.int_size());
 		rslt = invx;
 	}
 
@@ -527,10 +551,15 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
 	// lets mutate params now
 	mynode->params[0]->mutate();
 	mynode->params[1]->mutate();
-	
+
+	operator_node* deexp = new operator_node(OP(op_Q));
+	deexp->add_par(mynode->params[1], false);
+	deexp->mutated = true;
+
+
 	operator_node* powtrycalc = new operator_node(OP(op_pow));
 	powtrycalc->add_par(mynode->params[0], false);
-	powtrycalc->add_par(mynode->params[1], false);
+	powtrycalc->add_par(ptr::shared_ptr<node>(deexp), false);
 	powtrycalc->mutated = true; // mark it already mutated due this node should not be mutated
 
 	operator_node * lnnode = new operator_node(OP(op_ln));
@@ -585,7 +614,7 @@ namespace {
 #ifdef LOGGER
 #define O(o, ...) ops[op_##o].reset(new op_##o##_c()); prepop(ops[op_##o].get(), WSTR(#o), __VA_ARGS__); ops[op_##o]->debug_name = #o;
 #else
-#define O(o) ops[op_##o].reset(new op_##o##_c()); ops[op_##o]->name = makename(WSTR(#o), __VA_ARGS__); 
+#define O(o, ...) ops[op_##o].reset(new op_##o##_c()); prepop(ops[op_##o].get(), WSTR(#o), __VA_ARGS__); 
 #endif
 			OPS
 #undef O

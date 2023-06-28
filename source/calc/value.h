@@ -223,6 +223,9 @@ class value
 		const value::value_core *c1 = vv1.get_core();
 		const value::value_core *c2 = vv2.get_core();
 
+		i32 expo = c1->exponent;
+		ASSERT(expo == c2->exponent);
+
 		std::vector<u8> & frac = rv.alloc_frac(max(c1->frac.size(), c2->frac.size()), nullptr);
 		const std::vector<u8> &frac2 = get_max(c1->frac, c2->frac);
 		copy_frac(frac, get_min(c1->frac, c2->frac));
@@ -234,6 +237,7 @@ class value
 		if (acc)
 			inte.insert(inte.begin(), 1, 1);
 
+		rv.set_exponent(expo);
 		rv.set_negative(false);
 		rv.trunc();
 	}
@@ -242,6 +246,10 @@ class value
 	{
 		const value::value_core *c1 = vv1.get_core();
 		const value::value_core *c2 = vv2.get_core();
+
+		i32 expo = c1->exponent;
+		ASSERT(expo == c2->exponent);
+
 
 		std::vector<u8> & frac = rv.alloc_frac(max(c1->frac.size(), c2->frac.size()), 0);
 		std::vector<u8> & inte = rv.alloc_int(max(c1->integer.size(), c2->integer.size()), 0);
@@ -260,6 +268,7 @@ class value
 		else
 			rv.set_negative(false);
 
+		rv.set_exponent(expo);
 		rv.trunc();
 	}
 
@@ -334,6 +343,59 @@ class value
 
 public:
 
+	static void aline_exponent(value& a1, value& a2)
+	{
+		i32 edelta = a1.get_exponent() - a2.get_exponent();
+		if (edelta == 0)
+			return;
+
+		if (a1.get_exponent() == 0)
+		{
+			a2.make_zero_exponent();
+			return;
+		}
+		if (a2.get_exponent() == 0)
+		{
+			a1.make_zero_exponent();
+			return;
+		}
+
+		// to decrease exponent, need to mul-by-100
+		// to increase exponent, need to div-by-100
+
+		if (edelta < 0)
+		{
+			// either increase a1 exponent by (-edelta) or decrease a2 exponent by (-edelta)
+			if (a2.int_size() < a1.frac_size())
+			{
+				// better to decrease a2 exponent due it means mul-by-100 and rise int part
+				a2.mul_by_100(-edelta);
+				a2.set_exponent(a1.get_exponent());
+			}
+			else {
+				// better to increase a1 exponent due it means div-by-100 and rise frac part
+				a1.div_by_100(-edelta);
+				a1.set_exponent(a2.get_exponent());
+			}
+		} else {
+			// either decrease a1 exponent by (edelta) or increase a2 exponent by (edelta)
+
+			if (a1.int_size() < a2.frac_size())
+			{
+				// better to decrease a1 exponent due it means mul-by-100 and rise int part
+				a1.mul_by_100(edelta);
+				a1.set_exponent(a2.get_exponent());
+			}
+			else {
+				// better to increase a2 exponent due it means div-by-100 and rise frac part
+				a2.div_by_100(edelta);
+				a2.set_exponent(a1.get_exponent());
+			}
+
+		}
+		
+	}
+
 	static void mul(value& rv, const value& vv1, usingle vv2, usingle plus = 0)
 	{
 		if (vv2 == 0)
@@ -345,6 +407,7 @@ public:
 		}
 
 		const value::value_core* c1 = vv1.get_core();
+		i32 expo = c1->exponent;
 
 #ifdef MODE64
 		std::vector<u8> mulbuf; mulbuf.resize(c1->size() + 10);
@@ -385,6 +448,7 @@ public:
 		rv.alloc_int(ipartsize, mulbuf.data());
 		rv.alloc_frac(fracsize, mulbuf.data() + ipartsize);
 		rv.set_negative(c1->negative);
+		rv.set_exponent(expo);
 		rv.trunc();
 
 	}
@@ -397,6 +461,7 @@ public:
 			mul(rv, vv1, uv);
 			if (vv2.is_negative())
 				rv.minus();
+			rv.set_exponent(vv1.get_exponent() + vv2.get_exponent());
 			return;
 		}
 
@@ -405,12 +470,13 @@ public:
 			mul(rv, vv2, uv);
 			if (vv1.is_negative())
 				rv.minus();
+			rv.set_exponent(vv1.get_exponent() + vv2.get_exponent());
 			return;
 		}
 
 		const value::value_core* c1 = vv1.get_core();
 		const value::value_core* c2 = vv2.get_core();
-
+		i32 expo = c1->exponent + c2->exponent;
 		//std::wstring t1 = c1->to_string();
 		//std::wstring t2 = c2->to_string();
 
@@ -446,6 +512,7 @@ public:
 		//std::wstring rslt = rv.get_core()->to_string();
 
 		rv.set_negative(c1->negative != c2->negative);
+		rv.set_exponent(expo);
 		rv.trunc();
 
 	}
@@ -473,6 +540,7 @@ public:
 		integer_t integer;
 		frac_t frac;
 		errset error = errset::OK;
+		i32 exponent = 0; // x (100^exponent)
 		signed precision : 15;
 		bool negative : 1;
 
@@ -483,6 +551,7 @@ public:
 				r->integer = integer;
 			if (0 == (CO_CLEAR_FRAC & cloneoptions))
 				r->frac = frac;
+			r->exponent = exponent;
 			r->precision = precision;
 			r->negative = negative;
             return r;
@@ -613,7 +682,7 @@ public:
 		return *this;
 	}
 
-	void unbypass()
+	value &unbypass()
 	{
 		if (error() == errset::BYPASS)
 		{
@@ -621,6 +690,7 @@ public:
 				core = core->clone(0);
 			core->error = errset::OK;
 		}
+		return *this;
 	}
 
 	value clone_int() const
@@ -671,10 +741,24 @@ public:
         return core;
     }
 
+	void make_zero_exponent()
+	{
+		if (core->exponent > 0)
+		{
+			mul_by_100(core->exponent);
+			core->exponent = 0;
+		}
+		else if (core->exponent < 0)
+		{
+			div_by_100(-core->exponent);
+			core->exponent = 0;
+		}
+	}
+
 	signed_t mul_by_100_until_non_zero_int();
 	signed_t div_by_100_until_zero_int();
-	void div_by_100(signed_t ntimes);
-	void mul_by_100(signed_t ntimes);
+	void div_by_100(signed_t ntimes); // shifts int and frac parts (not changes exponent field)
+	void mul_by_100(signed_t ntimes); // shifts int and frac parts (not changes exponent field)
 
 	value& div_by_2_int()
 	{
@@ -840,7 +924,8 @@ public:
 			if (v1 < v2)
 				return false;
 		}
-		return true;
+
+		return core->exponent == ov.core->exponent;
 	}
 
 	signed_t compare(const value &ov, signed_t precision) const
@@ -899,9 +984,9 @@ public:
 	void calc_inverse(value &r, signed_t precision) const; // calc 1/this
 
 	void calc_shift_left(value &r, const value &svu) const; // calc binary shift left by svu (ignore signe, ignore frac)
-	void calc_shift_rite(value &r, const value &svu) const; // calc binary shift rite by svu (ignore signe, ignore frac)
+	void calc_shift_right(value &r, const value &svu) const; // calc binary shift rite by svu (ignore signe, ignore frac)
 	void calc_shift_left(value& r, usingle svuu) const; // calc binary shift left by svuu (ignore signe, ignore frac)
-	void calc_shift_rite(value& r, usingle svuu) const; // calc binary shift rite by svuu (ignore signe, ignore frac)
+	void calc_shift_right(value& r, usingle svuu) const; // calc binary shift rite by svuu (ignore signe, ignore frac)
 	
 	/*
 		old implementation
@@ -944,6 +1029,13 @@ public:
 		core->negative = neg;
 	}
 
+	void set_exponent(i32 expo)
+	{
+		if (core->is_multi_ref())
+			core = core->clone(0);
+		core->exponent = expo;
+	}
+
     bool is_negative() const
     {
         return core->negative;
@@ -952,6 +1044,11 @@ public:
 	bool is_infinity() const
 	{
 		return core->error == errset::INF;
+	}
+
+	i32 get_exponent() const
+	{
+		return core->exponent;
 	}
 
 

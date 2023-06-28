@@ -215,8 +215,8 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 
 	if (prc < 0)
 	{
-		signed_t isz = outs.length(); if (negative) --isz;
-		if (isz >= 0 && !(outs[i] == '0' && frac.size() > 0 && frac[0] < 10))
+		signed_t isz = outs.length() - i;
+		if (!(outs[i] == '0' && frac.size() > 0 && frac[0] < 10))
 		{
 			//if (outs[i] == '0' && outs.length() > s)
 			//{
@@ -236,17 +236,31 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 			}
 			if (outs[outs.length()-1]=='.')
 				outs.push_back('0');
-			outs.append(WSTR("E+"));
-			outs.append(std::to_wstring(isz-1));
+
+			signed_t expn = isz - 1 + exponent * 2;
+			if (expn < 0)
+			{
+				outs.append(std::wstring_view(L"E\u2212",2));
+				expn = -expn;
+			}
+			else
+			{
+				outs.append(WSTR("E+"));
+			}
+
+			outs.append(std::to_wstring(expn));
 			return outs;
 		}
 		prc = -prc;
 		expon = true;
 	}
 	
+	signed_t pti = outs.size();
+
     if (frac.size() > 0)
     {
-        outs.push_back('.');
+		if (exponent == 0)
+			outs.push_back('.');
 		signed_t sf = outs.length();
         ::to_string(outs, frac, expon ? (1000) : prc);
         size_t lci = outs.size() - 1;
@@ -255,6 +269,12 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 
 		if (expon && ((signed_t)outs.length()-sf) > 0)
 		{
+			if (exponent != 0)
+			{
+				outs.insert(outs.begin() + pti, '.');
+				++sf;
+			}
+
 			if (outs[i+1] == '.' && outs[i] == '0')
 			{
 				signed_t numz = 0;
@@ -269,8 +289,19 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 					if (i + prc + 1 < (signed_t)outs.size())
 						outs.resize(i + prc + 1);
 					outs.insert(outs.begin() + i+1, L'.');
-					outs.append(WSTR("E-"));
-					outs.append(std::to_wstring(numz+1));
+					if (outs[outs.length() - 1] == '.')
+						outs.push_back('0');
+					signed_t expn = -(numz + 1) + exponent * 2;
+					if (expn < 0)
+					{
+						outs.append(std::wstring_view(L"E\u2212", 2));
+						expn = -expn;
+					}
+					else
+					{
+						outs.append(WSTR("E+"));
+					}
+					outs.append(std::to_wstring(expn));
 					return outs;
 				}
 			}
@@ -280,8 +311,31 @@ std::wstring value::value_core::to_string_10(signed_t prc) const
 		{
 			outs.resize(sf + prc);
 		}
-
     }
+
+	if (exponent > 0)
+	{
+		pti += exponent * 2;
+		if (pti < (signed_t)outs.size())
+			outs.insert(outs.begin()+pti, '.');
+		else if (pti > (signed_t)outs.size()) {
+			outs.append(pti - outs.size(), '0');
+		}
+	}
+	else if (exponent < 0)
+	{
+		pti += exponent * 2;
+		if (pti > 0)
+			outs.insert(outs.begin() + pti, '.');
+		else if (pti == 0)
+		{
+			outs.insert(0, WSTR("0."));
+
+		} else if (pti < 0) {
+			outs.insert(0, WSTR("0."));
+			outs.insert(2, -pti, L'0');
+		}
+	}
 
 	signed_t j = i;
 	for (; outs[j] == '0';) ++j;
@@ -533,13 +587,14 @@ std::wstring value::to_string(signed_t radix, signed_t precision) const
 
 		wchar_t hexar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 		value r0, r1(*this), r2;
+		r1.make_zero_exponent();
 
 		wchar_t hex16[4];
 
 		for (;!r1.is_zero_int(); r1 = r0)
 		{
 			r2 = r1;
-			r1.calc_shift_rite(r0, 16);
+			r1.calc_shift_right(r0, 16);
 			r0.calc_shift_left(r1, 16);
 			usingle x;
 			(r2 - r1).to_unsigned(x);
@@ -619,12 +674,17 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 		return;
 	}
 
+	signed_t minprec = int_size() + frac_size() + divider.int_size() + divider.frac_size();
+	if (precision < minprec)
+		precision = minprec;
+
 	usingle val;
 	if (divider.is_zero_frac() && divider.to_unsigned(val)) // simple case: divider is integer (frac part is empty)
 	{
-		calc_div(rslt, val, precision + 10);
+		calc_div(rslt, val, precision + 1);
 		if (divider.is_negative())
 			rslt.minus();
+		rslt.set_exponent(get_exponent() - divider.get_exponent());
 		return;
 	}
 
@@ -635,10 +695,11 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 		d.mul_by_100(fsz); // remove frac part
 		if (d.to_unsigned(val)) // so, check it can be converted to u64
 		{
-			calc_div(rslt, val, precision + 10); // use integer division
+			calc_div(rslt, val, precision + 1); // use integer division
 			if (divider.is_negative())
 				rslt.minus();
 			rslt.mul_by_100(fsz);
+			rslt.set_exponent(get_exponent() - divider.get_exponent());
 			rslt.clamp_frac(precision);
 			return;
 		}
@@ -647,7 +708,7 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 	// common case - multiply by inversed divider
 
 	value invv;
-	divider.calc_inverse(invv, precision*2);
+	divider.calc_inverse(invv, precision+1);
 	rslt = *this * invv;
 	rslt.clamp_frac(precision);
 }
@@ -823,7 +884,7 @@ void value::calc_inverse(value &rslt, signed_t precision) const
 
 		if (index >= 100)
 			index = 99;
-
+		ASSERT(index >= 0);
 		signed_t cmpv1 = muls[index].compare(cmp, precision);
 		if (cmpv1 == 0)
 		{
@@ -843,7 +904,7 @@ void value::calc_inverse(value &rslt, signed_t precision) const
 			cmp.mul_by_100(1);
 			continue;
 		}
-
+		ASSERT(index >= 0 && index < 100);
 		signed_t cmpv2 = muls[index-1].compare(cmp, precision);
 		if (cmpv2 == 0)
 		{
@@ -896,6 +957,7 @@ void value::calc_inverse(value &rslt, signed_t precision) const
 	{
 		rslt.div_by_100(-muln-1);
 	}
+	rslt.set_exponent(-get_exponent());
 }
 
 #if 0
@@ -1010,19 +1072,19 @@ void value::calc_shift_left(value &r, usingle svuu) const
 	r = curm;
 }
 
-void value::calc_shift_rite(value& r, const value& svu) const
+void value::calc_shift_right(value& r, const value& svu) const
 {
 	usingle svuu;
 	if (svu.to_unsigned(svuu))
 	{
-		calc_shift_rite(r, svuu);
+		calc_shift_right(r, svuu);
 		return;
 	}
 
 	r = value(); // zero
 }
 
-void value::calc_shift_rite(value &r, usingle svuu) const
+void value::calc_shift_right(value &r, usingle svuu) const
 {
 	const signed_t archbitm1 = (ARCHBITS - 1);
 

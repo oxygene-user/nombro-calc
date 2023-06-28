@@ -18,7 +18,7 @@ struct node : ptr::sync_shared_object
 	}
 
 #ifdef _DEBUG
-	virtual std::wstring info(int ots) = 0;
+	virtual std::wstring info(signed_t ots) = 0;
 #endif
 };
 
@@ -43,7 +43,7 @@ struct value_node : public node
 		return v.error();
 	}
 #ifdef _DEBUG
-	/*virtual*/ std::wstring info(int /*ots*/) override
+	/*virtual*/ std::wstring info(signed_t /*ots*/) override
 	{
 		return v.to_string(10, 10);
 	}
@@ -68,7 +68,7 @@ struct expression_node : public node
 		return e;
 	}
 #ifdef _DEBUG
-	/*virtual*/ std::wstring info(int /*ots*/) override
+	/*virtual*/ std::wstring info(signed_t /*ots*/) override
 	{
 		return expression->get_value().to_string(10, 10);
 	}
@@ -92,7 +92,7 @@ struct string_node : public node
 	}
 	/*virtual*/ bool absorb(std::vector<ptr::shared_ptr<node>>& heap, signed_t index) override;
 #ifdef _DEBUG
-	/*virtual*/ std::wstring info(int /*ots*/) override
+	/*virtual*/ std::wstring info(signed_t /*ots*/) override
 	{
 		return str;
 	}
@@ -112,7 +112,7 @@ struct operator_node : public node
 	operator_node(const ::op* o) :op(o) {}
 
 #ifdef _DEBUG
-	/*virtual*/ std::wstring info(int ots) override
+	/*virtual*/ std::wstring info(signed_t ots) override
 	{
 		std::wstring s(L"op: ");
 		s.append(op->name).append(L", ").append(std::to_wstring(params.size())).append(L" par(s)\r\n");

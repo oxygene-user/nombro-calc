@@ -220,6 +220,29 @@ errset operator_node::check()
 		return true;
 	}
 
+	// preparse exponential form
+	for (size_t offs = 0;;)
+	{
+		size_t epos = str.find('e', offs);
+		if (epos == str.npos)
+			break;
+		offs = epos + 1;
+		if (epos > 0 && epos + 1 < str.length())
+		{
+			wchar_t prec = str[epos - 1];
+			wchar_t postc = str[epos + 1];
+			if (is_digit(prec) || prec == '.')
+			{
+				if (is_digit(postc) || postc == '+' || postc == L'\u2212')
+				{
+					str[epos] = 'E';
+					if (postc == '+')
+						str[epos+1] = ' '; // not to confuse the parser with this plus
+				}
+			}
+		}
+	}
+
 	const op::allops& all = op::all();
 	for (const auto& o : all)
 	{
@@ -718,7 +741,7 @@ ptr::shared_ptr<node> etree::parse(const std::wstring_view &expression)
 				if (on->prepared())
 					continue;
 
-				if (on->op->precedence == op::PRECEDENCE_CONST)
+				if (on->op->precedence == op::PRECEDENCE_CONST && on->op->reqpars == npars(0,0))
 				{
 					if (heap[i]->absorb(heap, i))
 					{

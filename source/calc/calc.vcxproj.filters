@@ -98,6 +98,9 @@
     <ClInclude Include="op_trigonometry.h">
       <Filter>src\core\operators</Filter>
     </ClInclude>
+    <ClInclude Include="op_bits.h">
+      <Filter>src\core\operators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="calc.cpp">
@@ -161,6 +164,9 @@
       <Filter>src\core\operators</Filter>
     </ClCompile>
     <ClCompile Include="op_trigonometry.cpp">
+      <Filter>src\core\operators</Filter>
+    </ClCompile>
+    <ClCompile Include="op_bits.cpp">
       <Filter>src\core\operators</Filter>
     </ClCompile>
   </ItemGroup>

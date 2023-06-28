@@ -2,44 +2,53 @@
 
 /*virtual*/ calc_result_t op_plus_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
-	if (calculated_params[0].is_infinity() && calculated_params[1].is_infinity())
+	value a1(calculated_params[0]);
+	value a2(calculated_params[1]);
+
+	if (a1.is_infinity() && a2.is_infinity())
 	{
-		bool neg0 = calculated_params[0].is_negative();
-		if (neg0 != calculated_params[1].is_negative())
+		bool neg0 = a1.is_negative();
+		if (neg0 != a2.is_negative())
 			return { value(errset::BAD_ARGUMENT), true };
 
 		return { value(errset::INF, neg0), true };
 	}
 
-	if (calculated_params[0].is_infinity())
-		return { calculated_params[0], true };
+	if (a1.is_infinity())
+		return { a1, true };
 
-	if (calculated_params[1].is_infinity())
-		return { calculated_params[1], true };
+	if (a2.is_infinity())
+		return { a2, true };
 
+	value::aline_exponent(a1, a2);
 
-	return { (calculated_params[0] + calculated_params[1]).clamp_frac(precision), true };
+	return { (a1 + a2).clamp_frac(precision), true };
 }
 
 /*virtual*/ calc_result_t op_minus_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
 {
-	if (calculated_params[0].is_infinity() && calculated_params[1].is_infinity())
+	value a1(calculated_params[0]);
+	value a2(calculated_params[1]);
+
+	if (a1.is_infinity() && a2.is_infinity())
 	{
-		bool neg0 = calculated_params[0].is_negative();
-		if (neg0 == calculated_params[1].is_negative())
+		bool neg0 = a1.is_negative();
+		if (neg0 == a2.is_negative())
 			return { value(errset::BAD_ARGUMENT), true };
 
 		return { value(errset::INF, neg0), true };
 	}
 
 
-	if (calculated_params[0].is_infinity())
-		return { calculated_params[0], true };
+	if (a1.is_infinity())
+		return { a1, true };
 
-	if (calculated_params[1].is_infinity())
-		return { value(errset::INF, !calculated_params[1].is_negative()), true };
+	if (a2.is_infinity())
+		return { value(errset::INF, !a2.is_negative()), true };
 
-	return { (calculated_params[0] - calculated_params[1]).clamp_frac(precision), true };
+	value::aline_exponent(a1, a2);
+
+	return { (a1 - a2).clamp_frac(precision), true };
 }
 
 /*virtual*/ calc_result_t op_neg_c::calc(const std::vector<value>& calculated_params, signed_t precision, context* /*ctx*/) const
@@ -126,8 +135,10 @@
 
 value op_mod_c::calc_mod(const value& v, const value& m)
 {
+	ASSERT(v.get_exponent() == 0 && m.get_exponent() == 0);
+
 	value rem;
-	v.calc_div(rem, m, 1);
+	v.calc_div(rem, m, 1 );
 	if (v.is_negative())
 		rem.set_negative(true);
 	rem.clamp_frac(0);
@@ -141,6 +152,8 @@ value op_mod_c::calc_mod(const value& v, const value& m)
 		return { value(errset::BAD_ARGUMENT), true };
 	}
 
+	value p0(calculated_params[0]); p0.make_zero_exponent();
+	value p1(calculated_params[1]); p0.make_zero_exponent();
 
-	return { calc_mod(calculated_params[0], calculated_params[1]), true };
+	return { calc_mod(p0, p1), true };
 }

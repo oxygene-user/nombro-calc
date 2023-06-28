@@ -54,6 +54,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="etree.h" />
     <ClInclude Include="fsys.h" />
+    <ClInclude Include="op_bits.h" />
     <ClInclude Include="op_trigonometry.h" />
     <ClInclude Include="op_base.h" />
     <ClInclude Include="op_constants.h" />
@@ -83,6 +84,7 @@
     <ClCompile Include="main_view.cpp" />
     <ClCompile Include="operators.cpp" />
     <ClCompile Include="op_base.cpp" />
+    <ClCompile Include="op_bits.cpp" />
     <ClCompile Include="op_constants.cpp" />
     <ClCompile Include="op_helpers.cpp" />
     <ClCompile Include="op_trigonometry.cpp" />

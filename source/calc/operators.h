@@ -28,24 +28,27 @@ struct npars
 		O( pi ) \
 		O( e ) \
 		O( phi ) \
-		O( neg, FUNC, std::wstring_view(L"\u2212", 1) ) \
-		O( ln, FUNC ) \
-		O( sqrt, FUNC ) \
-		O( exp, FUNC ) \
+		O( E, INFOP, WSTR("E") ) \
+/*e*/	O( neg, FUNC, std::wstring_view(L"\u2212", 1) ) \
+/*e*/	O( ln, FUNC ) \
+/*e*/	O( sqrt, FUNC ) \
+/*e*/	O( exp, FUNC ) \
 		O( int, FUNC ) \
 		O( frac, FUNC ) \
-		O( anorm, FUNC ) \
-		O( pow, INFOP, WSTR("^") ) \
-		O( sin, FUNC ) \
-		O( cos, FUNC ) \
-		O( tan, FUNC ) \
-		O( div, INFOP, std::wstring_view(L"\u00f7", 1) ) \
-		O( mul, INFOP, std::wstring_view(L"\u00d7", 1) ) \
-		O( mod, INFOP, WSTR("\\") ) \
-		O( minus, INFOP, std::wstring_view(L"\u2212", 1) ) \
-		O( plus, INFOP, WSTR("+") ) \
-		O( shl, INFOP, WSTR("<<") ) \
-		O( shr, INFOP, WSTR(">>") ) \
+/*e*/	O( anorm, FUNC ) \
+/*e*/	O( pow, INFOP, WSTR("^") ) \
+/*e*/	O( sin, FUNC ) \
+/*e*/	O( cos, FUNC ) \
+/*e*/	O( tan, FUNC ) \
+/*e*/	O( div, INFOP, std::wstring_view(L"\u00f7", 1) ) \
+/*e*/	O( mul, INFOP, std::wstring_view(L"\u00d7", 1) ) \
+/*e*/	O( mod, INFOP, WSTR("\\") ) \
+/*e*/	O( minus, INFOP, std::wstring_view(L"\u2212", 1) ) \
+/*e*/	O( plus, INFOP, WSTR("+") ) \
+/*e*/	O( shl, INFOP, WSTR("<<") ) \
+/*e*/	O( shr, INFOP, WSTR(">>") ) \
+		O( Q, FUNC ) \
+
 
 #define O(o, ...) op_##o##,
 enum operator_e {
@@ -114,6 +117,7 @@ public:
 #include "op_constants.h"
 #include "op_helpers.h"
 #include "op_trigonometry.h"
+#include "op_bits.h"
 
 class op_pow_c : public op
 {
@@ -122,6 +126,7 @@ public:
 	op_pow_c() :op(PRECEDENCE_POW) {}
 	/*virtual*/ calc_result_t calc(const std::vector<value>& calculated_params, signed_t precision, context* ctx) const override;
 	/*virtual*/ void mutate(operator_node*) const;
+	static value power(const value &v, bool neg, usingle n, signed_t precision);
 };
 
 class op_sqrt_c : public op
@@ -207,7 +212,8 @@ class op_ln_c : public op
         {
 			value maxx(10, 0);
 			z = iz;
-			x = iz;
+			z.make_zero_exponent();
+			x = z;
 
 			for (;;)
 			{
@@ -221,7 +227,6 @@ class op_ln_c : public op
             precision = 5;
             n = 3;
 
-			
 			x.sub(1);
 			x.calc_div(s, x+2, prec+10);
 			x = s;
@@ -243,22 +248,5 @@ public:
 
     /*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
     virtual context *create_context(u8 ct) const { return new ln_context(ct); }
-};
-
-
-
-class op_shl_c : public op
-{
-public:
-	op_shl_c() :op(PRECEDENCE_SHIFT) {}
-	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
-};
-
-class op_shr_c : public op
-{
-public:
-
-	op_shr_c() :op(PRECEDENCE_SHIFT) {}
-	/*virtual*/ calc_result_t calc(const std::vector<value> &calculated_params, signed_t precision, context *ctx) const override;
 };
 

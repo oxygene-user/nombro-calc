@@ -31,6 +31,8 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
 typedef unsigned __int64 u64;
+typedef long i32;
+typedef __int64 i64;
 #ifdef _MSC_VER
 #ifdef MODE64
 struct u128
