@@ -84,7 +84,7 @@ static usingle hex16(const std::wstring_view& from)
 	return v;
 }
 
-static errset parse(std::vector<u8> &to, const std::wstring_view &from, size_t radix, bool intpart)
+static errset parse(value::integer_t &to, const std::wstring_view &from, size_t radix, bool intpart)
 {
     if (radix == 10)
     {
@@ -684,7 +684,7 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 		calc_div(rslt, val, precision + 1);
 		if (divider.is_negative())
 			rslt.minus();
-		rslt.set_exponent(get_exponent() - divider.get_exponent());
+		rslt.set_exponent(rslt.get_exponent() - divider.get_exponent());
 		return;
 	}
 
@@ -698,8 +698,8 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 			calc_div(rslt, val, precision + 1); // use integer division
 			if (divider.is_negative())
 				rslt.minus();
-			rslt.mul_by_100(fsz);
-			rslt.set_exponent(get_exponent() - divider.get_exponent());
+			//rslt.mul_by_100(fsz);
+			rslt.set_exponent(fsz + get_exponent() - divider.get_exponent());
 			rslt.clamp_frac(precision);
 			return;
 		}
@@ -718,7 +718,7 @@ void value::calc_div(value &rslt, usingle divider, signed_t precision) const
 {
     if (divider == 0)
     {
-        rslt = value(errset::DIVISION_BY_ZERO);
+        rslt = value(errset::INF);
         return;
     }
     if (divider == 1)
@@ -728,8 +728,10 @@ void value::calc_div(value &rslt, usingle divider, signed_t precision) const
     }
     if (divider == 100)
     {
+
         rslt = *this;
-        rslt.div_by_100(1);
+		rslt.set_exponent(rslt.get_exponent() - 1);
+		//rslt.div_by_100(1);
         return;
     }
 
@@ -779,7 +781,9 @@ void value::calc_div(value &rslt, usingle divider, signed_t precision) const
             d -= x;
             if (d == 0 && infrac && i>=cnt)
             {
+				rslt.set_exponent(get_exponent());
                 rslt.clamp_frac(precision);
+				rslt.set_negative(is_negative());
                 return;
             }
         }
@@ -789,6 +793,7 @@ void value::calc_div(value &rslt, usingle divider, signed_t precision) const
         }
 
     }
+	rslt.set_exponent(get_exponent());
     rslt.clamp_frac(precision);
 	rslt.set_negative(is_negative());
 }

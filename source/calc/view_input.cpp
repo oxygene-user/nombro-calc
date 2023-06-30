@@ -987,7 +987,10 @@ bool ResultView::show()
             if (showradix == 16)
                 r.make_zero_exponent();
             if (showprec >= 0)
-                r.round((showprec+1)/2);
+            {
+                r.make_zero_exponent();
+                r.round((showprec + 1) / 2);
+            }
             nvs = r.to_string(showradix, showprec);
         }
         else if (e == errset::INF)

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+<Type Name="value::bvec">
+	<DisplayString Condition="size()==0">empty</DisplayString>
+	<DisplayString Condition="size()==1">{(*this)[0],nvo}</DisplayString>
+	<DisplayString Condition="size()==2">{(*this)[0],nvo}|{(*this)[1],nvo}</DisplayString>
+	<DisplayString Condition="size()==3">{(*this)[0],nvo}|{(*this)[1],nvo}|{(*this)[2],nvo}</DisplayString>
+	<DisplayString Condition="size()==4">{(*this)[0],nvo}|{(*this)[1],nvo}|{(*this)[2],nvo}|{(*this)[3],nvo}</DisplayString>
+	<DisplayString Condition="size()==5">{(*this)[0],nvo}|{(*this)[1],nvo}|{(*this)[2],nvo}|{(*this)[3],nvo}|{(*this)[4],nvo}</DisplayString>
+	<DisplayString Condition="size()==6">{(*this)[0],nvo}|{(*this)[1],nvo}|{(*this)[2],nvo}|{(*this)[3],nvo}|{(*this)[4],nvo}|{(*this)[5],nvo}</DisplayString>
+	<DisplayString Condition="size()>6">{(*this)[0],nvo}|{(*this)[1],nvo}|{(*this)[2],nvo}|{(*this)[3],nvo}|{(*this)[4],nvo}|{(*this)[5],nvo}...{(*this)[size()-1],nvo}({size()})</DisplayString>
+</Type>
+
+
+	<Type Name="value">
+    <DisplayString>{core.object-&gt;integer}.{core.object-&gt;frac}</DisplayString>
+    <Expand>
+        <Item Name="int">core.object-&gt;integer</Item>
+        <Item Name="frac">core.object-&gt;frac</Item>
+        <Item Name="exponent">core.object-&gt;exponent</Item>
+        <Item Name="precision">core.object-&gt;precision</Item>
+        <Item Name="negative">core.object-&gt;negative</Item>
+    </Expand>
+</Type>
+
+
+</AutoVisualizer>

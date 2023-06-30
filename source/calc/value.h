@@ -45,8 +45,14 @@ value operator+(const value &, u64);
 
 class value
 {
-	typedef std::vector<u8> integer_t;
-	typedef std::vector<u8> frac_t;
+public:
+	class bvec : public std::vector<u8>
+	{
+
+	};
+	typedef bvec integer_t;
+	typedef bvec frac_t;
+private:
 
 	friend value operator+(const value &vv1, const value &vv2);
 	friend value operator+(const value &vv1, u64);
@@ -187,14 +193,14 @@ class value
 	}
 
 
-	static const std::vector<u8> &get_min(const std::vector<u8> &s1, const std::vector<u8> &s2)
+	static const value::bvec&get_min(const value::bvec&s1, const value::bvec&s2)
 	{
 		if (s1.size() < s2.size())
 			return s1;
 		return s2;
 	}
 
-	static const std::vector<u8> &get_max(const std::vector<u8> &s1, const std::vector<u8> &s2)
+	static const value::bvec&get_max(const value::bvec &s1, const value::bvec&s2)
 	{
 		if (s1.size() >= s2.size())
 			return s1;
@@ -226,12 +232,12 @@ class value
 		i32 expo = c1->exponent;
 		ASSERT(expo == c2->exponent);
 
-		std::vector<u8> & frac = rv.alloc_frac(max(c1->frac.size(), c2->frac.size()), nullptr);
-		const std::vector<u8> &frac2 = get_max(c1->frac, c2->frac);
+		frac_t& frac = rv.alloc_frac(max(c1->frac.size(), c2->frac.size()), nullptr);
+		const frac_t &frac2 = get_max(c1->frac, c2->frac);
 		copy_frac(frac, get_min(c1->frac, c2->frac));
 		bool acc = add(frac, frac2, false);
-		std::vector<u8> & inte = rv.alloc_int(max(c1->integer.size(), c2->integer.size()), nullptr);
-		const std::vector<u8> &inte2 = get_max(c1->integer, c2->integer);
+		integer_t & inte = rv.alloc_int(max(c1->integer.size(), c2->integer.size()), nullptr);
+		const integer_t&inte2 = get_max(c1->integer, c2->integer);
 		copy_int(inte, get_min(c1->integer, c2->integer));
 		acc = add(inte, inte2, acc);
 		if (acc)

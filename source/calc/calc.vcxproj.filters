@@ -180,4 +180,7 @@
       <Filter>res</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\oxid.natvis" />
+  </ItemGroup>
 </Project>
