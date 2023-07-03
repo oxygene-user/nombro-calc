@@ -665,6 +665,184 @@ bool value::to_unsigned(usingle &r) const
     return true;
 }
 
+static bool add10(value::bvec& tgt, const value::bvec& src1, const value::bvec& src2)
+{
+	ASSERT(tgt.size() == src1.size());
+	ASSERT(tgt.size() == src2.size());
+
+	bool acc = false;
+
+	for (signed_t i = tgt.size() - 1; i >= 0; --i)
+	{
+		signed_t sum = src1[i] + src2[i];
+
+		if (acc)
+		{
+			++sum;
+			acc = false;
+		}
+
+		if (sum >= 10)
+		{
+			acc = true;
+			sum -= 10;
+		}
+		tgt[i] = tools::as_byte(sum);
+	}
+	return acc;
+}
+
+static bool sub10(value::bvec& tgt, const value::bvec& src)
+{
+
+	signed_t acc = 0;
+	signed_t zero = 0;
+	for (signed_t i = src.size() - 1, j = 0; i >= 0; --i, ++j)
+	{
+		signed_t tindex = tgt.size() - j - 1;
+
+		signed_t sum = tgt[tindex] - src[src.size() - j - 1] - acc;
+		acc = 0;
+
+		if (sum < 0)
+		{
+			acc = 1;
+			sum += 10;
+		}
+		tgt[tindex] = tools::as_byte(sum);
+		zero |= sum;
+	}
+	return zero == 0;
+}
+
+/*
+* long division implementation
+* radix 10 used
+*/
+void value::calc_div_impl(value& rslt, const value& divider, signed_t precision) const
+{
+	integer_t sum[9], ch, ddd, brs;
+
+	auto cmp = [&](signed_t index) ->bool // true if sum[index] > tail_of(ddd)
+	{
+		signed_t lm = sum[0].size();
+		signed_t shift = ddd.size() - lm;
+		for (signed_t i = 0; i < lm; ++i)
+		{
+			u8 a = sum[index][i];
+			u8 b = ddd[i + shift];
+			if (a < b)
+				return false;
+			if (a > b)
+				return true;
+		}
+		return false;
+	};
+
+	auto partdiv = [&]() -> signed_t
+	{
+		for (signed_t i = 0; i < 9; ++i)
+		{
+			if (cmp(i))
+				return i;
+		}
+		return 9;
+	};
+
+	signed_t pt = -divider.get_flat(sum[0]) + 1; // +1 - skip zero
+	signed_t sz = sum[0].size();
+	sum[1].resize(sz);
+	bool carry = add10(sum[1], sum[0], sum[0]);
+	ASSERT(!carry);
+	for (signed_t i = 2; i < 9; ++i)
+	{
+		sum[i].resize(sz);
+		bool carry = add10(sum[i], sum[i-1], sum[0]);
+		ASSERT(!carry);
+	}
+	pt += get_flat(ch);
+	if (ch.size() < sz)
+	{
+		ch.resize(sz);
+	}
+
+	ddd.resize(sz);
+	memcpy(ddd.data(), ch.data(), sz);
+
+	signed_t nexts = sz;
+	bool absolute = false;
+
+	for (;;)
+	{
+
+		signed_t d = partdiv();
+
+		if (d > 0)
+		{
+			if (sub10(ddd, sum[d - 1]))
+			{
+				absolute = true;
+				brs.push_back(tools::as_byte(d));
+				break;
+			}
+		}
+
+		if (nexts >= ch.size())
+		{
+			ddd.push_back(0);
+		}
+		else
+		{
+			ddd.push_back(ch[nexts]);
+		}
+		++nexts;
+
+		brs.push_back( tools::as_byte(d) );
+
+		if (((signed_t)brs.size()-pt) >= precision*2)
+			break;
+	}
+
+	//pt += fsz;
+
+	auto get_next = [&]() ->u8
+	{
+		u8 acc = 0;
+		if (pt >= 0)
+			acc = brs[pt] * 10;
+
+		++pt;
+		if (pt >= 0 && pt < brs.size())
+			acc += brs[pt];
+
+		++pt;
+
+		return acc;
+	};
+
+	rslt.set_zero();
+
+	if (pt > 0)
+	{
+		integer_t& inte = rslt.alloc_int((pt + 1) / 2, nullptr);
+		for (signed_t i = pt - 2, j = inte.size() - 1; i >= 0; i -= 2, --j)
+		{
+			u8 acc = brs[i] * 10 + brs[i + 1];
+			inte[j] = acc;
+		}
+		if (0 != (pt & 1))
+			inte[0] = brs[0];
+	}
+
+	for (; pt < (signed_t)brs.size();)
+		rslt.append_frac(get_next());
+
+	rslt.set_exponent(get_exponent() - divider.get_exponent());
+	rslt.clamp_frac(absolute ? precision * 100 : precision);
+
+	//__debugbreak();
+}
+
 void value::calc_div(value &rslt, const value &divider, signed_t precision) const
 {
 	// check equals
@@ -705,11 +883,15 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 		}
 	}
 
-	// common case - multiply by inversed divider
+	calc_div_impl(rslt, divider, precision + 1);
 
+	/*
+	// common case - multiply by inversed divider
 	value invv;
 	divider.calc_inverse(invv, precision+1);
 	rslt = *this * invv;
+	*/
+
 	rslt.clamp_frac(precision);
 }
 
@@ -737,12 +919,12 @@ void value::calc_div(value &rslt, usingle divider, signed_t precision) const
 
 	value keep_self(*this);
 
-    std::vector<u8> *buf = &rslt.alloc_int(0, nullptr);
-    std::vector<u8> &frac = rslt.alloc_frac(0, nullptr);
+    integer_t *buf = &rslt.alloc_int(0, nullptr);
+    frac_t &frac = rslt.alloc_frac(0, nullptr);
 
     udouble d = 0;
     const value::value_core *c = keep_self.core;
-    const std::vector<u8> *src = &c->integer;
+    const integer_t *src = &c->integer;
     signed_t i = 0, cnt = c->integer.size();
     for (; i < cnt; ++i)
         if (c->integer[i] > 0)
@@ -802,31 +984,29 @@ void value::calc_div_int(value& rslt, usingle divider) const
 {
 	if (divider == 0)
 	{
-		rslt = value(errset::DIVISION_BY_ZERO);
+		rslt = value(errset::INF);
 		return;
 	}
 	if (divider == 1)
 	{
 		rslt = *this;
-		rslt.remove_frac();
 		return;
 	}
 	if (divider == 100)
 	{
+
 		rslt = *this;
-		rslt.div_by_100(1);
-		rslt.remove_frac();
+		rslt.set_exponent(rslt.get_exponent() - 1);
+		//rslt.div_by_100(1);
 		return;
 	}
 
 	value keep_self(*this);
 
-	std::vector<u8>* buf = &rslt.alloc_int(0, nullptr);
-	rslt.remove_frac();
-
+	integer_t& ibuf = rslt.alloc_int(0, nullptr);
 	udouble d = 0;
 	const value::value_core* c = keep_self.core;
-	const std::vector<u8>* src = &c->integer;
+	const integer_t* src = &c->integer;
 	signed_t i = 0, cnt = c->integer.size();
 	for (; i < cnt; ++i)
 		if (c->integer[i] > 0)
@@ -834,32 +1014,32 @@ void value::calc_div_int(value& rslt, usingle divider) const
 
 	if (i == cnt)
 	{
-		// zero this - zero result
+		rslt.set_zero();
 		return;
 	}
 
-	for (;; ++i)
+	for (; i < cnt; ++i)
 	{
-		u8 e = 0;
-		if (i >= cnt)
-		{
-			rslt.set_negative(is_negative());
-			return;
-		}
-		if (i < cnt)
-			e = (*src)[i];
+		u8 e = (*src)[i];
 
 		math::mul100add(d, e); //d = d * 100u + e;
 		if (d >= divider)
 		{
 			udouble x = math::div(d, divider); //d / divider;
-			buf->push_back(tools::as_byte(x));
+			ibuf.push_back(tools::as_byte(x));
 			math::mul(x, divider);
 			d -= x;
 		}
+		else if (ibuf.size() > 0)
+		{
+			ibuf.push_back(0);
+		}
+
 
 	}
-	//rslt.set_negative(is_negative());
+	rslt.set_exponent(get_exponent());
+	rslt.clamp_frac(0);
+	rslt.set_negative(is_negative());
 }
 
 void value::calc_inverse(value &rslt, signed_t precision) const
@@ -954,15 +1134,20 @@ void value::calc_inverse(value &rslt, signed_t precision) const
 			__debugbreak();
 	}
 
+	signed_t expt = (muln != -1) ? muln + 1 : 0;
+	/*
 	if (muln >= 0)
 	{
-		rslt.mul_by_100(muln+1);
+		//rslt.mul_by_100(muln+1);
+		expt = muln + 1;
 	}
 	else if (muln < -1)
 	{
-		rslt.div_by_100(-muln-1);
+		//rslt.div_by_100(-muln-1);
+		expt = muln + 1;
 	}
-	rslt.set_exponent(-get_exponent());
+	*/
+	rslt.set_exponent(expt - get_exponent());
 }
 
 #if 0

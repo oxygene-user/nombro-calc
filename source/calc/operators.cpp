@@ -45,7 +45,7 @@ value bakhshali_sqrt(const value& x, signed_t precision)
 value heron_sqrt(const value& val, signed_t precision)
 {
 	value half(0, 50);
-	value x0, invx0;
+	value x0, dv;
 	value a(val); a.set_exponent(0); // temporary reset exponent
 	usingle z;
 	if (a.to_unsigned(z))
@@ -59,8 +59,9 @@ value heron_sqrt(const value& val, signed_t precision)
 	}
 	for (;;)
 	{
-		x0.calc_inverse(invx0, precision * 2);
-		value x1 = ((invx0 * a) + x0) * half;
+		a.calc_div(dv, x0, precision + 2);
+		value::aline_exponent(dv, x0);
+		value x1 = (dv + x0) * half;
 
 		if (x1.compare(x0, precision) == 0)
 			break;
@@ -69,7 +70,7 @@ value heron_sqrt(const value& val, signed_t precision)
 		//std::wstring s2 = x0.to_string();
 
 		x0 = x1;
-		x0.clamp_frac(precision * 2);
+		x0.clamp_frac(precision + 2);
 	}
 
 	if (i32 ex = val.get_exponent())
@@ -338,16 +339,17 @@ value op_sqrt_c::calc_sqrt(const value& a, signed_t precision)
     lctx->check_reset(x, precision);
 
 
-    for (;; lctx->n += 2)
+	value el;
+	for (;; lctx->n += 2)
     {
 		if (globalstop || lctx->calctag != op::calctag)
 			return { value(), true};
 
         //lctx->xx = lctx->xx * lctx->x2;
 		value::mul(lctx->xx, lctx->xx, lctx->x2);
-        value el;
         lctx->xx.calc_div(el, lctx->n, precision*2);
 		lctx->xx.clamp_frac(precision*2);
+		value::aline_exponent(lctx->s, el);
 		lctx->s = lctx->s + el;
         
         if (lctx->n > 9)

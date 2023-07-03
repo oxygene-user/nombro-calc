@@ -88,6 +88,7 @@ value op_e_c::calc_e(signed_t precision)
 	{
 		value s;
 		d.calc_inverse(s, precision + 20);
+		value::aline_exponent(acc, s);
 		acc = acc + s;
 		acc.clamp_frac(precision + 1);
 

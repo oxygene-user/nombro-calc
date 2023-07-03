@@ -65,7 +65,7 @@ private:
 		CO_CLEAR_FRAC = 2
 	};
 
-	static void set_unsigned(std::vector<u8> &buf, u64 v)
+	static void set_unsigned(bvec&buf, u64 v)
 	{
 		signed_t i = buf.size() - 1;
 		for (; i >= 0 && v > 0; --i)
@@ -79,7 +79,7 @@ private:
 			memset(buf.data(), 0, i+1);
 	}
 
-	static bool add(std::vector<u8> &tgt, const std::vector<u8> &src, bool acc)
+	static bool add(bvec &tgt, const bvec&src, bool acc)
 	{
 		ASSERT(tgt.size() == src.size());
 		for (signed_t i = tgt.size() - 1; i >= 0; --i)
@@ -102,11 +102,11 @@ private:
 		return acc;
 	}
 
-	static void add(std::vector<u8> &buf, u64 v)
+	static void add(bvec &buf, u64 v)
 	{
 		if (v > 99)
 		{
-			std::vector<u8> num;
+			bvec num;
 			
 			if (buf.size() < 20)
 				buf.insert(buf.begin(), 20-buf.size(), 0);
@@ -659,6 +659,41 @@ public:
 		return *this;
     }
 
+	signed_t get_flat(bvec& b) const
+	{
+		signed_t isz = int_size();
+		signed_t fsz = frac_size();
+		
+		signed_t prereserve = 1;
+		signed_t is = core->integer.size() - isz;
+		if (isz > 0 && core->integer[is] < 10)
+			--prereserve;
+
+		signed_t sz = 2 * (isz + fsz) + prereserve;
+		b.resize(sz);
+		for (signed_t i = 0; i < isz; ++i)
+		{
+			u8 n = core->integer[i + is];
+			u8 tens = n / 10;
+			u8 rem = n - tens * 10;
+			b[prereserve + i * 2] = tens;
+			b[prereserve + i * 2 + 1] = rem;
+		}
+		signed_t os = prereserve + isz * 2;
+		for (signed_t i = 0; i < fsz; ++i)
+		{
+			u8 n = core->frac[i];
+			u8 tens = n / 10;
+			u8 rem = n - tens * 10;
+			b[os + i * 2] = tens;
+			b[os + i * 2 + 1] = rem;
+		}
+
+		return os;
+
+	}
+
+
 	void move_integer_part(integer_t& intp)
 	{
 		if (core->is_multi_ref())
@@ -983,6 +1018,7 @@ public:
 		return INFINITY_PRECISION;
 	}
 
+	void calc_div_impl(value& r, const value& divider, signed_t precision) const; // calc this/divider (implementation of common case)
 	void calc_div(value &r, const value &divider, signed_t precision) const; // calc this/divider
 	void calc_div(value &r, usingle divider, signed_t precision) const; // calc this/divider
 	void calc_div_int(value& r, usingle divider) const; // calc this/divider without frac (integer division)
