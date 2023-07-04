@@ -9,7 +9,7 @@ Powerful programmer's calculator
 
 # supported operators
 
-- plus (+), minus (-), multiply (*), divide (/), mod (\)
+- plus (+), minus (-), multiply (*), divide (/), mod (\\)
 - shift left (<<), shift right (>>), and (&), xor (xor), or (|)
 - power (^), square root (sqrt), natural logarithm (ln), exponential function (exp)
 - truncate fraction part (int), get fraction part (frac)
