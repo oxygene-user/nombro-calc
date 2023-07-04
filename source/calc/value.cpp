@@ -525,12 +525,23 @@ namespace
 	};
 }
 
-void long_mul100(std::vector<usingle>&)
+template<usingle v2> void long_muladd(std::vector<usingle>& b, usingle plus) // little-endian array mul and add
 {
-	__debugbreak();
+	udouble accum = plus;
+	for (signed_t i=0, cnt = b.size(); i<cnt; ++i)
+	{
+		usingle x1 = b[i];
+		if (x1)
+			math::mulplus(accum, v2, x1);
+		b[i] = accum.low;
+		accum.low = accum.hi;
+		accum.hi = 0;
+	}
+	if (accum.low != 0)
+		b.push_back(accum.low);
 }
 
-void long_add(std::vector<usingle>& ar, usingle val)
+void long_add(std::vector<usingle>& ar, usingle val) // little-endian array add
 {
 	usingle maxv = (usingle)(-1);
 	usingle t = maxv - val;
@@ -560,14 +571,30 @@ void value::to_unsigned(std::vector<usingle>&ar) const
 		{
 			for (; i < cnt; ++i)
 			{
-				long_mul100(ar);
-				long_add(ar, c->integer[i]);
+				long_muladd<100>(ar, c->integer[i]);
 			}
 			return;
 		}
 	}
-
 }
+
+void value::set_unsigned(const std::vector<usingle>& m)
+{
+	value tmp;
+	set_zero();
+	for (signed_t i = m.size()-1; i >= 0; --i) // loop from hi to low
+	{
+		usingle u = m[i];
+		const signed_t numdb = (sizeof(usingle) / 2);
+		for (signed_t j = 0; j < numdb; ++j)
+		{
+			usingle uu16 = (u >> ((numdb - j - 1) * 16)) & 0xffff;
+			mul(tmp, *this, 65536, uu16);
+			*this = tmp;
+		}
+	}
+}
+
 
 std::wstring value::to_string(signed_t radix, signed_t precision) const
 {
@@ -624,6 +651,26 @@ std::wstring value::to_string(signed_t radix, signed_t precision) const
 
 		return outs;
 
+	}
+	if (radix == -16)
+	{
+		std::vector<usingle> arr;
+		to_unsigned(arr);
+		neg(arr);
+
+		usingle hi = arr[arr.size()-1];
+		usingle mask1 = 255ull << sizeof(usingle) * 7;
+		usingle mask2 = mask1 >> 8;
+
+		for (; mask2 != 0; mask1 >>= 8, mask2 >>= 8)
+		{
+			if ((hi & mask1) == mask1 && (hi & mask2) == mask2)
+				hi &= ~mask1;
+			else break;
+		}
+		arr[arr.size() - 1] = hi;
+		value x; x.set_unsigned(arr);
+		return x.to_string(16, 0);
 	}
 	
 	return std::wstring(WSTR("unsupported radix"));
@@ -757,11 +804,11 @@ void value::calc_div_impl(value& rslt, const value& divider, signed_t precision)
 	for (signed_t i = 2; i < 9; ++i)
 	{
 		sum[i].resize(sz);
-		bool carry = add10(sum[i], sum[i-1], sum[0]);
+		carry = add10(sum[i], sum[i-1], sum[0]);
 		ASSERT(!carry);
 	}
 	pt += get_flat(ch);
-	if (ch.size() < sz)
+	if ((signed_t)ch.size() < sz)
 	{
 		ch.resize(sz);
 	}
@@ -787,7 +834,7 @@ void value::calc_div_impl(value& rslt, const value& divider, signed_t precision)
 			}
 		}
 
-		if (nexts >= ch.size())
+		if (nexts >= (signed_t)ch.size())
 		{
 			ddd.push_back(0);
 		}
@@ -812,7 +859,7 @@ void value::calc_div_impl(value& rslt, const value& divider, signed_t precision)
 			acc = brs[pt] * 10;
 
 		++pt;
-		if (pt >= 0 && pt < brs.size())
+		if (pt >= 0 && pt < (signed_t)brs.size())
 			acc += brs[pt];
 
 		++pt;
@@ -877,7 +924,7 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 			if (divider.is_negative())
 				rslt.minus();
 			//rslt.mul_by_100(fsz);
-			rslt.set_exponent(fsz + get_exponent() - divider.get_exponent());
+			rslt.set_exponent((i32)fsz + get_exponent() - divider.get_exponent());
 			rslt.clamp_frac(precision);
 			return;
 		}
@@ -1147,7 +1194,7 @@ void value::calc_inverse(value &rslt, signed_t precision) const
 		expt = muln + 1;
 	}
 	*/
-	rslt.set_exponent(expt - get_exponent());
+	rslt.set_exponent((i32)expt - get_exponent());
 }
 
 #if 0
@@ -1305,8 +1352,7 @@ void value::calc_shift_right(value &r, usingle svuu) const
 
 		if (curm.compare(m, 0) >= 0)
 		{
-			curm.calc_div(curm, diver, 2);
-			curm.clamp_frac(0);
+			curm.calc_div_int(curm, diver);
 		}
 		else
 		{
@@ -1317,6 +1363,38 @@ void value::calc_shift_right(value &r, usingle svuu) const
 	}
 
 	r = curm;
+}
+
+bool value::neg(std::vector<usingle>& longn)
+{
+	bool expand = false;
+	if (longn.size() > 0)
+	{
+		if (0 != (longn[longn.size() - 1] & (1ull << (sizeof(usingle) * 8 - 1)))) // looks like array already contains negative value. let's expand it to assume value positive
+		{
+			longn.push_back(0);
+			expand = true;
+		}
+
+		usingle plus = 1;
+		for (signed_t i = 0, cnt = longn.size(); i < cnt; ++i)
+		{
+			usingle x = longn[i];
+			if (x == 0)
+			{
+				longn[i] = 0;
+				plus = 1;
+			}
+			else
+			{
+				x = (~x) + plus;
+				longn[i] = x;
+				plus = 0;
+			}
+		}
+	}
+
+	return expand;
 }
 
 calculating_value::~calculating_value()

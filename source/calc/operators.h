@@ -47,6 +47,9 @@ struct npars
 /*e*/	O( plus, INFOP, WSTR("+") ) \
 /*e*/	O( shl, INFOP, WSTR("<<") ) \
 /*e*/	O( shr, INFOP, WSTR(">>") ) \
+/*e*/	O( and, INFOP, WSTR("&") ) \
+/*e*/	O( xor, INFOP, WSTR("xor") ) \
+/*e*/	O( or, INFOP, WSTR("|") ) \
 		O( Q, FUNC ) \
 
 
@@ -69,6 +72,9 @@ public:
 		PRECEDENCE_MULT = 4,
 		PRECEDENCE_PLUS = 5,
 		PRECEDENCE_SHIFT = 6,
+		PRECEDENCE_AND = 7,
+		PRECEDENCE_XOR = 8,
+		PRECEDENCE_OR = 9,
 
 
 		PRECEDENCE_LOWEST

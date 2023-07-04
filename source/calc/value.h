@@ -257,8 +257,8 @@ private:
 		ASSERT(expo == c2->exponent);
 
 
-		std::vector<u8> & frac = rv.alloc_frac(max(c1->frac.size(), c2->frac.size()), 0);
-		std::vector<u8> & inte = rv.alloc_int(max(c1->integer.size(), c2->integer.size()), 0);
+		bvec & frac = rv.alloc_frac(max(c1->frac.size(), c2->frac.size()), 0);
+		bvec& inte = rv.alloc_int(max(c1->integer.size(), c2->integer.size()), 0);
 		bool acc = sub_frac(frac, c1->frac, c2->frac);
 		acc = sub_int(inte, c1->integer, c2->integer, acc);
 		if (acc)
@@ -279,7 +279,7 @@ private:
 	}
 
 
-	static void trunc_left(std::vector<u8> &buf)
+	static void trunc_left(bvec & buf)
 	{
 		signed_t i = 0;
 		for (signed_t cnt = buf.size(); i < cnt && buf[i] == 0; ++i);
@@ -416,9 +416,9 @@ public:
 		i32 expo = c1->exponent;
 
 #ifdef MODE64
-		std::vector<u8> mulbuf; mulbuf.resize(c1->size() + 10);
+		bvec mulbuf; mulbuf.resize(c1->size() + 10);
 #else
-		std::vector<u8> mulbuf; mulbuf.resize(c1->size() + 5);
+		bvec mulbuf; mulbuf.resize(c1->size() + 5);
 #endif
 		memset(mulbuf.data(), 0, mulbuf.size());
 
@@ -428,7 +428,7 @@ public:
 		udouble accum = plus;
 		for (size_t i1 = 0; i1 < s1; ++i1, --iput)
 		{
-			size_t v1 = c1->from_end(i1);
+			usingle v1 = c1->from_end(i1);
 			if (v1)
 				math::mulplus(accum, vv2, v1);
 			usingle rm;
@@ -486,7 +486,7 @@ public:
 		//std::wstring t1 = c1->to_string();
 		//std::wstring t2 = c2->to_string();
 
-		std::vector<u8> mulbuf; mulbuf.resize(c1->size() + c2->size());
+		bvec mulbuf; mulbuf.resize(c1->size() + c2->size());
 		memset(mulbuf.data(), 0, mulbuf.size());
 		size_t s1 = c1->size();
 
@@ -579,7 +579,7 @@ public:
             return integer.size() + frac.size();
         }
 
-        size_t from_end(size_t index) const
+        usingle from_end(size_t index) const
         {
             if (index >= frac.size())
             {
@@ -869,6 +869,8 @@ public:
         core->error = errset::OK;
     }
 
+	void set_unsigned(const std::vector<usingle>& m);  // convert little-endian array to value
+
 	value &set_unsigned(u64 v) // v is unsigned!
 	{
 		if (core->is_multi_ref())
@@ -1116,7 +1118,7 @@ public:
 	std::wstring to_string(signed_t radix, signed_t precision) const;
 
     bool to_unsigned(usingle &) const; // convert only integer part, returns false, if size of size_t is not enough
-	void to_unsigned(std::vector<usingle>&) const; // convert only integer part. generate array of values in little endian
+	void to_unsigned(std::vector<usingle>&) const; // convert only integer part. generate array of values in little endian (lower index - least significant value)
 
 	value &trunc()
 	{
@@ -1132,6 +1134,9 @@ public:
 
 		return *this;
 	}
+
+
+	static bool neg(std::vector<usingle>& longn); // calc 0-array (make negative) little-endian array
 };
 
 

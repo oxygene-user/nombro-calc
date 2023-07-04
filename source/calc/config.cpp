@@ -99,6 +99,8 @@ void Config::load(const std::wstring& fn, usingle options)
 			rb2.set(WSTR("expression")).set_value(c_empty);
 			rb2.set(WSTR("radix")).set_value(16);
 			rb2.set(WSTR("precision")).set_value(0);
+			rb2.set(WSTR("options")).set_value(1);
+			rb1e.add_comment(WSTR("// for radix 16 options:1 means to show negative values as twos-complement"));
 			rb2.set(WSTR("placeholder")).set_value(WSTR("Result as Hex"));
 
 			wsts& rb3 = r.add_block();

@@ -14,6 +14,7 @@
 
 #define RFS \
     RFP(active, true) \
+    RFP(options, 0) \
     RFP(id, nullptr) \
 	RFP(expression, nullptr) \
 	RFP(radix, 10) \

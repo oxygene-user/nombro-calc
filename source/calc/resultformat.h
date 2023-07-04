@@ -9,6 +9,12 @@ struct ResultFormat
 	std::wstring id, expression, placeholder, epreparsed;
 	signed_t radix = 10;
 	signed_t precision = 100;
+	signed_t options = 0;
+
+	enum opt
+	{
+		O_NEG_HEX_TWOSCOMP = 1,
+	};
 
 	std::map<std::wstring, std::wstring, std::less<> > comments;
 	std::unique_ptr<calc_machine> calcmachine; // for expression
@@ -26,6 +32,7 @@ struct ResultFormat
 		placeholder = std::move(of.placeholder);
 		radix = of.radix;
 		precision = of.precision;
+		options = of.options;
 		comments = std::move(of.comments);
 		calcmachine = std::move(of.calcmachine);
 		active = of.active;

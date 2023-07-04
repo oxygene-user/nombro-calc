@@ -952,6 +952,7 @@ void ResultView::set_result_expression(ptr::shared_ptr<calculating_value> rslt)
             }
             showradix = r.radix;
             showprec = r.precision;
+            showopts = r.options;
             break;
         }
     }
@@ -992,6 +993,15 @@ bool ResultView::show()
                 r.round((showprec + 1) / 2);
             }
             nvs = r.to_string(showradix, showprec);
+
+            if (r.is_negative() && showradix == 16 && (0 != (ResultFormat::O_NEG_HEX_TWOSCOMP & showopts)))
+            {
+                std::wstring negs = r.to_string(-16, 0);
+                nvs.append(WSTR(" ("));
+                nvs.append(negs);
+                nvs.push_back(')');
+            }
+
         }
         else if (e == errset::INF)
         {

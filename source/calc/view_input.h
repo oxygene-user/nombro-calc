@@ -121,6 +121,7 @@ class ResultView : public InputView
 	
 	signed_t showradix = 10;
 	signed_t showprec = 100;
+	signed_t showopts = 0;
 	//std::wstring showstr;
 	//volatile bool working = false;
 	//volatile bool stop = false;

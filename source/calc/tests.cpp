@@ -3,9 +3,28 @@
 
 void do_some_tests()
 {
-	if (true) return;
+	
+	
+	std::vector<usingle> mm, mm2;
+	for (int i = 0; i < 4; ++i)
+	{
+		//mm.push_back( rand() * rand() * rand() * rand());
+	}
+
+	mm.push_back(1);
+	mm.push_back(0);
+	value::neg(mm);
+
 
 	value x, y, z;
+
+	x.set_unsigned(mm);
+	x.to_unsigned(mm2);
+
+
+	if (true) return;
+
+
 	//x.set_unsigned(257653);
 	//y.set_unsigned(232); //y.set_unsigned(262);
 
