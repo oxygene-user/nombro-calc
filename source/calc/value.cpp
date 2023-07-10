@@ -871,10 +871,16 @@ void value::calc_div_impl(value& rslt, const value& divider, signed_t precision)
 
 	if (pt > 0)
 	{
+		signed_t brss = brs.size();
+		auto gfbrs = [&](signed_t i) -> u8
+		{
+			return i < brss ? brs[i] : 0;
+		};
+
 		integer_t& inte = rslt.alloc_int((pt + 1) / 2, nullptr);
 		for (signed_t i = pt - 2, j = inte.size() - 1; i >= 0; i -= 2, --j)
 		{
-			u8 acc = brs[i] * 10 + brs[i + 1];
+			u8 acc = gfbrs(i) * 10 + gfbrs(i + 1);
 			inte[j] = acc;
 		}
 		if (0 != (pt & 1))

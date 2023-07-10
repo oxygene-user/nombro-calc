@@ -485,35 +485,40 @@ errset operator_node::check()
 	return true;
 }
 
-/*virtual*/ bool operator_node::absorb(std::vector<ptr::shared_ptr<node>>& heap, signed_t index)
+bool operator_node::addparnext(std::vector<ptr::shared_ptr<node>>& heap, signed_t index1)
 {
-	auto addparnext = [&]() ->bool
+	node* an = heap[index1 + 1];
+	if (operator_node* on = dynamic_cast<operator_node*>(an))
 	{
-		node* an = heap[index + 1];
-		if (operator_node* on = dynamic_cast<operator_node*>(an))
+		if (!on->prepared())
 		{
-			if (!on->prepared())
+			if (on->op->reqpars(0, 1) && size_t(index1 + 2) < heap.size())
 			{
-				if (on->op->reqpars(0, 1) && size_t(index + 2) < heap.size())
+				if (!on->addparnext(heap, index1 + 1))
 				{
-					on->add_par(heap[index+2], false);
-					heap.erase(heap.begin() + index + 2);
-				}
-				else {
 					heap.clear();
 					heap.emplace_back(new value_node(value(errset::BAD_ARGS_NUM)));
 					return false;
 				}
 			}
+			else {
+				heap.clear();
+				heap.emplace_back(new value_node(value(errset::BAD_ARGS_NUM)));
+				return false;
+			}
 		}
+	}
 
-		add_par(heap[index+1], false);
-		heap.erase(heap.begin() + index + 1);
-		return true;
+	add_par(heap[index1 + 1], false);
+	heap.erase(heap.begin() + index1 + 1);
+	return true;
 
-	};
+};
 
 
+
+/*virtual*/ bool operator_node::absorb(std::vector<ptr::shared_ptr<node>>& heap, signed_t index)
+{
 	if (heap.size() == 1)
 	{
 		if (!op->reqpars(0, 0))
@@ -529,7 +534,7 @@ errset operator_node::check()
 	if (index == 0)
 	{
 		if (op->reqpars(0, 1))
-			return addparnext() && heap.size() > 1;
+			return addparnext(heap, index) && heap.size() > 1;
 
 		if (op->reqpars(0, 0))
 		{
@@ -569,7 +574,7 @@ errset operator_node::check()
 	{
 		// can absorb left and right
 		add_par(heap[index - 1], true);
-		if (addparnext())
+		if (addparnext(heap, index))
 			heap.erase(heap.begin() + index - 1);
 		return heap.size() > 1;
 	}
@@ -597,7 +602,7 @@ errset operator_node::check()
 	if (op->reqpars(0, 1))
 	{
 		// can absorb only right
-		return addparnext();
+		return addparnext(heap, index);
 	}
 
 	if (op->reqpars(1, 0))

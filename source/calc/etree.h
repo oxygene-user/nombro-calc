@@ -170,6 +170,12 @@ struct operator_node : public node
 		return prp;
 	}
 	errset check();
+
+private:
+	/*
+	* add param, check it prepared. if not, prepare
+	*/
+	bool addparnext(std::vector<ptr::shared_ptr<node>>& heap, signed_t index);
 };
 
 class etree
