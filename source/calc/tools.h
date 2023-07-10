@@ -495,7 +495,7 @@ namespace math
             d += z;
         }
         __if_not_exists(_umul128) {
-            __debugbreak(); // sorry, only vs2019+ supported (no _umul128 intrinsinc in older versions)
+            __debugbreak(); // sorry, only vs2019+ supported (no _umul128 intrinsic in older versions)
 		}
 
 	}
@@ -510,7 +510,7 @@ namespace math
 		}
 
 		__if_not_exists(_udiv128) {
-			return 0; // sorry, only vs2019+ supported (no _udiv128 intrinsinc in older versions)
+			return 0; // sorry, only vs2019+ supported (no _udiv128 intrinsic in older versions)
 		}
 
 	}
@@ -521,7 +521,7 @@ namespace math
 		}
 
 		__if_not_exists(_umul128) {
-            __debugbreak(); // sorry, only vs2019+ supported (no _umul128 intrinsinc in older versions)
+            __debugbreak(); // sorry, only vs2019+ supported (no _umul128 intrinsic in older versions)
 		}
 
 	}
@@ -534,7 +534,7 @@ namespace math
 		}
 
 		__if_not_exists(_umul128) {
-			__debugbreak(); // sorry, only vs2019+ supported (no _umul128 intrinsinc in older versions)
+			__debugbreak(); // sorry, only vs2019+ supported (no _umul128 intrinsic in older versions)
 		}
 
 	}

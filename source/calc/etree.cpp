@@ -244,40 +244,40 @@ errset operator_node::check()
 	}
 
 	const op::allops& all = op::all();
-	for (const auto& o : all)
+	for (const op &o : all)
 	{
-		op* op = o.get();
 		size_t from = 0;
 		sag:
-		size_t i = str.find(o->name, from);
+		size_t i = str.find(o.name, from);
 		if (i == str.npos)
 			continue;
-		while (op->bigger)
+		const op* oo = &o;
+		while (oo->bigger)
 		{
-			if (str.substr(i)._Starts_with(op->bigger->name))
+			if (str.substr(i)._Starts_with(oo->bigger->name))
 			{
-				op = op->bigger;
+				oo = oo->bigger;
 				continue;
 			}
 			break;
 		}
 
 		
-		if (is_letter(op->name[0]))
+		if (is_letter(oo->name[0]))
 		{
 			if (i > 0 && is_letter(str[i - 1]))
 			{
 				from = i + 1;
 				goto sag;
 			}
-			if (i + op->name.length() < str.length() && is_letter(str[i + op->name.length()]))
+			if (i + oo->name.length() < str.length() && is_letter(str[i + oo->name.length()]))
 			{
 				from = i + 1;
 				goto sag;
 			}
 		}
 
-		ptr::shared_ptr<node> n = new operator_node(op);
+		ptr::shared_ptr<node> n = new operator_node(oo);
 		heap.insert(heap.begin() + index, n);
 		signed_t myindex = index + 1;
 		if (i > 0)
@@ -292,7 +292,7 @@ errset operator_node::check()
 				++myindex;
 			}
 		}
-		str.erase(0, i+op->name.length()); // and fix current string node
+		str.erase(0, i+oo->name.length()); // and fix current string node
 		tools::trim(str);
 		if (str.empty())
 		{

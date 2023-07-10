@@ -42,22 +42,28 @@ struct npars
 /*e*/	O( tan, FUNC ) \
 /*e*/	O( div, INFOP, std::wstring_view(L"\u00f7", 1) ) \
 /*e*/	O( mul, INFOP, std::wstring_view(L"\u00d7", 1) ) \
-/*e*/	O( mod, INFOP, WSTR("\\") ) \
+/*e*/	O( mod, INFOP, WSTR("mod") ) \
 /*e*/	O( minus, INFOP, std::wstring_view(L"\u2212", 1) ) \
 /*e*/	O( plus, INFOP, WSTR("+") ) \
 /*e*/	O( shl, INFOP, WSTR("<<") ) \
 /*e*/	O( shr, INFOP, WSTR(">>") ) \
-/*e*/	O( and, INFOP, WSTR("&") ) \
+/*e*/	O( and, INFOP, WSTR("and") ) \
 /*e*/	O( xor, INFOP, WSTR("xor") ) \
-/*e*/	O( or, INFOP, WSTR("|") ) \
+/*e*/	O( or, INFOP, WSTR("or") ) \
 		O( Q, FUNC ) \
+		S( or, WSTR("|") ) \
+		S( and, WSTR("&") ) \
+		S( pow, std::wstring_view(L"\u00d7\u00d7",2) ) \
+		S( mod, WSTR("\\") ) \
 
 
 #define O(o, ...) op_##o##,
+#define S(...)
 enum operator_e {
 	OPS
 	OPS_COUNT
 };
+#undef S
 #undef O
 
 class op
@@ -94,8 +100,24 @@ public:
 	std::wstring_view name;
     op *bigger = nullptr; // pointer to op with bigger name (name of current op is substring of bigger)
 	op* homonym = nullptr; // homonym (op with same name but lower precedence)
+	std::unique_ptr<op> synonym; // list of synonyms
 	signed_t precedence;
 	npars reqpars;
+
+	void add_syn(op *sop, const std::wstring_view &sn)
+	{
+		if (!synonym)
+		{
+			synonym.reset(sop);
+			synonym->name = sn;
+			synonym->reqpars = reqpars;
+#ifdef LOGGER
+			synonym->debug_name = debug_name;
+#endif
+		}
+		else
+			synonym->add_syn(sop, sn);
+	}
 
 	op(signed_t precedence) :precedence(precedence) {}
     virtual ~op() {}
@@ -104,12 +126,157 @@ public:
 	
 	virtual context *create_context(u8 ct) const { return new context(ct); }
 
-    typedef std::unique_ptr<op> allops[OPS_COUNT];
+	class allops;
+	struct opiter_const
+	{
+		const allops* owner;
+		const op* current;
+		operator_e o;
+
+		const op* get() const
+		{
+			if (o >= OPS_COUNT)
+				return nullptr;
+
+			return current != nullptr ? current : owner->get(o);
+		}
+
+		const op& operator*() const noexcept {
+
+			return *get();
+		}
+
+		const op * operator->() const noexcept {
+			return get();
+		}
+
+		opiter_const& operator++() noexcept {
+
+			if (current)
+			{
+				current = current->synonym.get();
+				if (current)
+					return *this;
+
+				o = (operator_e)(o + 1);
+				return *this;
+			}
+
+			current = owner->get(o)->synonym.get();
+			if (current)
+				return *this;
+
+			o = (operator_e)(o + 1);
+			
+			return *this;
+		}
+
+		opiter_const operator++(int) noexcept {
+			opiter_const _Tmp = *this;
+			++* this;
+			return _Tmp;
+		}
+		bool operator!=(const opiter_const& oo) const
+		{
+			if (o != oo.o)
+				return true;
+			return current != oo.current;
+		}
+	};
+
+	struct opiter
+	{
+		allops* owner;
+		op* current;
+		operator_e o;
+
+		op* get()
+		{
+			return current != nullptr ? current : owner->get(o);
+		}
+
+		op& operator*() noexcept {
+
+			return *get();
+		}
+
+		op* operator->() noexcept {
+			return get();
+		}
+
+		opiter& operator++() noexcept {
+
+			if (current)
+			{
+				current = current->synonym.get();
+				if (current)
+					return *this;
+
+				o = (operator_e)(o + 1);
+				return *this;
+			}
+
+			current = owner->get(o)->synonym.get();
+			if (current)
+				return *this;
+
+			o = (operator_e)(o + 1);
+			return *this;
+		}
+
+		opiter operator++(int) noexcept {
+			opiter _Tmp = *this;
+			++* this;
+			return _Tmp;
+		}
+
+		bool operator!=(const opiter& oo) const
+		{
+			if (o != oo.o)
+				return true;
+			return current != oo.current;
+		}
+
+	};
+
+	class allops
+	{
+		std::unique_ptr<op> m[OPS_COUNT];
+	public:
+		const op* get(operator_e o) const
+		{
+			return m[o].get();
+		}
+		op* get(operator_e o)
+		{
+			return m[o].get();
+		}
+		opiter_const begin() const
+		{
+			return { this, nullptr, (operator_e)0 };
+		}
+		opiter_const end() const
+		{
+			return { this, nullptr, OPS_COUNT };
+		}
+		opiter begin()
+		{
+			return { this, nullptr, (operator_e)0 };
+		}
+		opiter end()
+		{
+			return { this, nullptr, OPS_COUNT };
+		}
+		void set(operator_e o, op* o2s)
+		{
+			m[o].reset(o2s);
+		}
+	};
     static const allops &all();
 
 	static inline const op* getop(operator_e o)
 	{
-		return all()[o].get();
+		return all().get(o);
 	}
 
 #ifdef LOGGER

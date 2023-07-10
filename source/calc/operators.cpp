@@ -614,43 +614,47 @@ namespace {
 		allinit()
 		{
 #ifdef LOGGER
-#define O(o, ...) ops[op_##o].reset(new op_##o##_c()); prepop(ops[op_##o].get(), WSTR(#o), __VA_ARGS__); ops[op_##o]->debug_name = #o;
+#define O(o, ...) ops.set(op_##o, new op_##o##_c()); prepop(ops.get(op_##o), WSTR(#o), __VA_ARGS__); ops.get(op_##o)->debug_name = #o;
 #else
-#define O(o, ...) ops[op_##o].reset(new op_##o##_c()); prepop(ops[op_##o].get(), WSTR(#o), __VA_ARGS__); 
+#define O(o, ...) ops.set(op_##o, new op_##o##_c()); prepop(ops.get(op_##o), WSTR(#o), __VA_ARGS__);
 #endif
+#define S(o, t) ops.get(op_##o)->add_syn(new op_##o##_c(), t);
 			OPS
+#undef S
 #undef O
 
+
+
 			// setup bigger
-			for (auto& o1 : ops)
+			for (op& o1 : ops)
 			{
-				for (auto& o2 : ops)
+				for (op& o2 : ops)
 				{
-					if (o1.get() == o2.get())
+					if (&o1 == &o2)
 						continue;
-					if (o1->name._Starts_with(o2->name) && o1->name.length() > o2->name.length())
+					if (o1.name._Starts_with(o2.name) && o1.name.length() > o2.name.length())
 					{
-						ASSERT(o2->bigger == nullptr); // moar then 2 ops with similar names not yet supported
-						o2->bigger = o1.get();
+						ASSERT(o2.bigger == nullptr); // moar then 2 ops with similar names not yet supported
+						o2.bigger = &o1;
 					}
 				}
 			}
 
 			// setup synonyms
-			for (auto& o1 : ops)
+			for (op& o1 : ops)
 			{
-				for (auto& o2 : ops)
+				for (op& o2 : ops)
 				{
-					if (o1.get() == o2.get())
+					if (&o1 == &o2)
 						continue;
 
-					if (o1->name == o2->name)
+					if (o1.name == o2.name)
 					{
-						ASSERT(o1->precedence != o2->precedence); // ops with same names MUST be different precedence
-						if (o1->precedence < o2->precedence)
+						ASSERT(o1.precedence != o2.precedence); // ops with same names MUST be different precedence
+						if (o1.precedence < o2.precedence)
 						{
-							ASSERT(o2->homonym == nullptr); // moar then 2 ops with same name not yet supported
-							o1->homonym = o2.get();
+							ASSERT(o2.homonym == nullptr); // moar then 2 ops with same name not yet supported
+							o1.homonym = &o2;
 						}
 					}
 				}
