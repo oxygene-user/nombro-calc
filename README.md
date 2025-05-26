@@ -14,7 +14,7 @@ Powerful programmer's calculator
 - power (^), square root (sqrt), natural logarithm (ln), exponential function (exp)
 - truncate fraction part (int), get fraction part (frac)
 - sine (sin), cosine (cos), tangent (tan), angle norm (anorm)
-- constant pi (pi), constant e (e)
+- constant pi (pi), constant e (e), golden ratio constant (phi)
 
 # screenshots
 ![Screen 1](https://github.com/oxygene-user/nombro-calc/blob/main/screens/screen-1.png?raw=true)
