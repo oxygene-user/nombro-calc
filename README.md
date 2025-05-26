@@ -1,4 +1,4 @@
-# oxid-calc
+# nombro-calc
 Powerful programmer's calculator
 
 - Big numbers with unlimited precission
@@ -17,7 +17,7 @@ Powerful programmer's calculator
 - constant pi (pi), constant e (e)
 
 # screenshots
-![Screen 1](https://github.com/oxygene-user/oxid-calc/blob/main/screens/screen-1.png?raw=true)
+![Screen 1](https://github.com/oxygene-user/nombro-calc/blob/main/screens/screen-1.png?raw=true)
 
 
 # build

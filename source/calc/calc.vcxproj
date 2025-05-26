@@ -22,7 +22,7 @@
     <ProjectGuid>{DC76DB2D-73BA-497E-AB96-551A64E712C6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>calc</RootNamespace>
-    <ProjectName>oxid-calc</ProjectName>
+    <ProjectName>nombro-calc</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(SolutionDir)\solution.props" />
@@ -113,7 +113,7 @@
     <Image Include="calc.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\oxid.natvis" />
+    <Natvis Include="..\nombro.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

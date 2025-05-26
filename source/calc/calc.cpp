@@ -13,7 +13,7 @@
 #pragma comment(lib, "Winmm.lib")
 
 #define MAX_LOADSTRING 100
-#define WND_CLASS_STR L"OXID_CALC_WC"
+#define WND_CLASS_STR L"NOMBRO_CALC_WC"
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -163,7 +163,7 @@ bool SystemWindowView::create_desktop_window(const wchar_t* caption, const int2&
 
 bool MainView::create()
 {
-    if (!create_desktop_window(L"oxid-calc", int4(cfg.get_wposx(), cfg.get_wposy(), cfg.get_wposx()+ cfg.get_wwidth(), cfg.get_wposy()+ cfg.get_wheight()), cfg.get_wmax()))
+    if (!create_desktop_window(L"nombro-calc", int4(cfg.get_wposx(), cfg.get_wposy(), cfg.get_wposx()+ cfg.get_wwidth(), cfg.get_wposy()+ cfg.get_wheight()), cfg.get_wmax()))
         return false;
 
     SetTimer(hwnd, 3437, 500, nullptr);
