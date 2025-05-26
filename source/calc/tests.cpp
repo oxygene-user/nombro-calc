@@ -4,7 +4,8 @@
 void do_some_tests()
 {
 	
-	
+	if (true) return;
+
 	std::vector<usingle> mm, mm2;
 	for (int i = 0; i < 4; ++i)
 	{
@@ -22,7 +23,6 @@ void do_some_tests()
 	x.to_unsigned(mm2);
 
 
-	if (true) return;
 
 
 	//x.set_unsigned(257653);
@@ -46,40 +46,43 @@ void do_some_tests()
 
 
 
-	x.set_unsigned(1000);
+	x.set_unsigned(1);
 	y.set_unsigned(132);
 
 	signed_t st = timeGetTime();
 	for (int i = 0; i < 5000; ++i)
 	{
 		x.calc_div_impl(z,y,102);
-		x = x + z;
+		//x = x + z;
+		value::aline_exponent(y, z);
 		y = y + z;
 	}
 	signed_t et = timeGetTime();
 	signed_t t = et - st;
 
-	value r1 = z;
+	value r1 = y;
 
-	x.set_unsigned(1000);
+	x.set_unsigned(1);
 	y.set_unsigned(132);
+	z.set_unsigned(0);
 
 	st = timeGetTime();
 	for (int i = 0; i < 5000; ++i)
 	{
 		y.calc_inverse(z, 106);
-		z = x * z;
-		z.clamp_frac(101);
-
-		value::aline_exponent(x, z);
-
-		x = x + z;
+		value::aline_exponent(y, z);
 		y = y + z;
+		//y.clamp_frac(101);
+
+		//value::aline_exponent(x, z);
+
+		//x = x + z;
+		//y = y + z;
 	}
 	et = timeGetTime();
 	signed_t t2 = et - st;
 
-	value r2 = z;
+	value r2 = y;
 	
 	MessageBoxW(nullptr, (std::to_wstring(t) + L"/"+ std::to_wstring(t2)).c_str(), L"test", MB_OK);
 }

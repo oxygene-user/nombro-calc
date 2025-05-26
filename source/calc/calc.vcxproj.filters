@@ -27,6 +27,9 @@
     <Filter Include="src\core\operators">
       <UniqueIdentifier>{d2ef2577-5788-4c1b-b9d8-88bad64fd512}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\gui\dialogs">
+      <UniqueIdentifier>{98570144-cd46-49a9-a8f0-85047842bff6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calc.h">
@@ -101,6 +104,15 @@
     <ClInclude Include="op_bits.h">
       <Filter>src\core\operators</Filter>
     </ClInclude>
+    <ClInclude Include="about.h">
+      <Filter>src\gui\dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="dialog.h">
+      <Filter>src\gui\dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="view_label.h">
+      <Filter>src\gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="calc.cpp">
@@ -168,6 +180,15 @@
     </ClCompile>
     <ClCompile Include="op_bits.cpp">
       <Filter>src\core\operators</Filter>
+    </ClCompile>
+    <ClCompile Include="about.cpp">
+      <Filter>src\gui\dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="dialog.cpp">
+      <Filter>src\gui\dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="view_label.cpp">
+      <Filter>src\gui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

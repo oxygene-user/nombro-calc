@@ -111,6 +111,8 @@ static std::tuple<bar*, const bar*> prepare(const std::vector<value>& calculated
 		usingle orv = (*std::get<0>(pr))[i] & (*std::get<1>(pr))[i];
 		(*std::get<0>(pr))[i] = orv;
 	}
+    for (signed_t i = std::get<1>(pr)->size(), cnt = std::get<0>(pr)->size(); i < cnt; ++i)
+        (*std::get<0>(pr))[i] = 0;
 
 	res.set_unsigned(*std::get<0>(pr));
 	res.clamp_frac(0);

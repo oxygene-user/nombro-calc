@@ -40,9 +40,8 @@ public:
 
     void handle_tick();
 
-    bool create(int nCmdShow);
+    bool create();
     /*virtual*/ void created() override;
-    /*virtual*/ void draw(HDC dc) override;
     /*virtual*/ void on_destroy() override;
     /*virtual*/ bool on_key(int vk, bool down) override;
     /*virtual*/ void on_char(wchar_t c, bool batch) override;

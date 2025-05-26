@@ -1116,6 +1116,7 @@ public:
     }
 
 	std::wstring to_string(signed_t radix, signed_t precision) const;
+	int bits_size() const;
 
     bool to_unsigned(usingle &) const; // convert only integer part, returns false, if size of size_t is not enough
 	void to_unsigned(std::vector<usingle>&) const; // convert only integer part. generate array of values in little endian (lower index - least significant value)

@@ -49,9 +49,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="about.h" />
     <ClInclude Include="calc.h" />
     <ClInclude Include="canvas.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="dialog.h" />
     <ClInclude Include="etree.h" />
     <ClInclude Include="fsys.h" />
     <ClInclude Include="op_bits.h" />
@@ -73,11 +75,14 @@
     <ClInclude Include="vec.h" />
     <ClInclude Include="view.h" />
     <ClInclude Include="view_input.h" />
+    <ClInclude Include="view_label.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="about.cpp" />
     <ClCompile Include="calc.cpp" />
     <ClCompile Include="canvas.cpp" />
     <ClCompile Include="config.cpp" />
+    <ClCompile Include="dialog.cpp" />
     <ClCompile Include="etree.cpp" />
     <ClCompile Include="fsys.cpp" />
     <ClCompile Include="logger.cpp" />
@@ -99,6 +104,7 @@
     <ClCompile Include="view.cpp" />
     <ClCompile Include="view_input.cpp" />
     <ClCompile Include="resultformat.cpp" />
+    <ClCompile Include="view_label.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="calc.rc" />

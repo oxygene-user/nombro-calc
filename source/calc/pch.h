@@ -8,6 +8,10 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 #define _ALLOW_RTCc_IN_STL
 
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+//#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+
+
 #ifdef _DEBUG
 #define LOGGER
 #endif
@@ -40,5 +44,8 @@
 #include "view.h"
 #include "main_view.h"
 #include "view_input.h"
+#include "view_label.h"
+
+#include "dialog.h"
 
 // reference additional headers your program requires here

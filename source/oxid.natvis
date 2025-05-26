@@ -14,7 +14,7 @@
 </Type>
 
 
-	<Type Name="value">
+<Type Name="value">
     <DisplayString>{core.object-&gt;integer}.{core.object-&gt;frac}</DisplayString>
     <Expand>
         <Item Name="int">core.object-&gt;integer</Item>
@@ -25,5 +25,25 @@
     </Expand>
 </Type>
 
+<Type Name="vec_t&lt;*,2&gt;">
+	<DisplayString>({x}, {y})</DisplayString>
+	<Expand>
+		<Item Name="x">x</Item>
+		<Item Name="y">y</Item>
+		<Item Name="sqlen">x*x+y*y</Item>
+	</Expand>
+</Type>
+
+<Type Name="vec_t&lt;*,4&gt;">
+	<DisplayString>({x}, {y})-({right}, {bottom}) sz: {right-left}, {bottom-top}</DisplayString>
+	<Expand>
+		<Item Name="x0">x</Item>
+		<Item Name="y0">y</Item>
+		<Item Name="x1">right</Item>
+		<Item Name="y1">bottom</Item>
+		<Item Name="width">right-left</Item>
+		<Item Name="height">bottom-top</Item>
+	</Expand>
+</Type>
 
 </AutoVisualizer>

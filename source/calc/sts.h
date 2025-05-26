@@ -128,6 +128,7 @@ public:
 		element *el;
 	public:
 		const string_type name() const {return el ? *el->name : string_type();}
+		bool is_comment() const { return el ? (el->name == &static_name_comment) : false; }
 		operator sts_t*() {return el ? &el->sts : nullptr;}
 		sts_t *operator->() {ASSERT(el); return &el->sts;}
 		void operator++() {el = el->next;}

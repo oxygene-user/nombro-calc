@@ -220,6 +220,31 @@ errset operator_node::check()
 		return true;
 	}
 
+	auto all_digits_before = [&](size_t p) ->bool
+	{
+		for (; p > 0; --p)
+		{
+			wchar_t prec = str[p - 1];
+			if (prec == ' ' || prec == '.')
+				return true;
+			if (!is_digit(prec))
+				return false;
+		}
+		return true;
+	};
+    auto all_digits_after = [&](size_t p) ->bool
+    {
+        for (size_t lim = str.length()-1; p < lim; ++p)
+        {
+            wchar_t prec = str[p + 1];
+            if (prec == ' ')
+                return true;
+            if (!is_digit(prec))
+                return false;
+        }
+        return true;
+    };
+
 	// preparse exponential form
 	for (size_t offs = 0;;)
 	{
@@ -231,9 +256,9 @@ errset operator_node::check()
 		{
 			wchar_t prec = str[epos - 1];
 			wchar_t postc = str[epos + 1];
-			if (is_digit(prec) || prec == '.')
+			if (all_digits_before(epos) || prec == '.')
 			{
-				if (is_digit(postc) || postc == '+' || postc == L'\u2212')
+				if (all_digits_after(epos) || postc == '+' || postc == L'\u2212')
 				{
 					str[epos] = 'E';
 					if (postc == '+')
@@ -262,6 +287,14 @@ errset operator_node::check()
 			break;
 		}
 
+		if (i > 0 && is_digit(str[i - 1]))
+		{
+			if (o.reqpars.prepn == 0)
+			{
+				// operator does not require prenum; it can be hex number like 0x0e
+				continue;
+			}
+		}
 		
 		if (is_letter(oo->name[0]))
 		{
@@ -408,9 +441,9 @@ errset operator_node::check()
 				return false;
 			}
 
-			if (!int_part.empty() && c == 'b')
+			if (!int_part.empty())
 			{
-				if (!bin_disallowed && i + 1 == str.length())
+				if (c == 'b' && !bin_disallowed && i + 1 == str.length())
 				{
 					radix = 2;
 					non10radix = std::move(int_part);

@@ -1,6 +1,9 @@
 #include "pch.h"
 
 #ifdef LOGGER
+
+#pragma warning (disable:4244)
+
 #include <codecvt>
 
 logger lg;

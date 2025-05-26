@@ -67,25 +67,12 @@ void MainView::handle_tick()
 }
 #endif
 
-MainView::MainView() :SystemWindowView(nullptr)
+MainView::MainView()
 {
 }
 
 MainView::~MainView()
 {
-    //ticker_stop = true;
-
-    /*
-    if (!ticker_starting)
-    {
-        // wait ticker stop
-        for (; ticker_works;)
-        {
-            Sleep(0);
-        }
-    }
-    */
-
 }
 
 /*virtual*/ void MainView::created()
@@ -93,13 +80,13 @@ MainView::~MainView()
     //ticker_starting = true;
     //CloseHandle(CreateThread(nullptr, 0, systicker, this, 0, nullptr));
 
-	const int hpadding = 10;
-	const int ivh = 40;
+
+	int ivh = 40;
+	Layout l;
 
 	input_view = new CalculatorInputView();
-	add_view(input_view, new Position(new AbsolutePVal(10), new AbsolutePVal(hpadding), new PaddingPVal(10), new AbsolutePVal(hpadding+ivh)));
+	add_view(input_view, l.vnext(ivh));
 
-	int y = hpadding + ivh + hpadding;
 	for (ResultFormat& r : cfg.get_results())
 	{
 		if (!r.active)
@@ -107,8 +94,7 @@ MainView::~MainView()
 
 		ptr::shared_ptr<ResultView> iv = new ResultView(r.fmt_id);
 		answers.push_back(iv);
-		add_view(iv, new Position(new AbsolutePVal(10), new AbsolutePVal(y), new PaddingPVal(10), new AbsolutePVal(y + ivh)));
-		y += ivh + hpadding;
+		add_view(iv, l.vnext(ivh));
 
 		if (r.radix == 16)
 			iv->set_hexview();
@@ -116,8 +102,7 @@ MainView::~MainView()
 		iv->set_placeholder(r.placeholder);
 	}
 
-	int new_main_window_height = y + ivh + 5;
-	set_height(new_main_window_height);
+	ajust_size(l);
 
 	//answer = new InputView(true);
 	//add_view(answer, new Position(new AbsolutePVal(10), new AbsolutePVal(60), new PaddingPVal(10), new AbsolutePVal(100)));
@@ -142,13 +127,7 @@ MainView::~MainView()
 	//input_view->on_char('-');
 	//input_view->on_char('3');
 
-}
-
-/*virtual*/ void MainView::draw(HDC dc)
-{
-    RECT r;
-    GetClientRect(hwnd, &r);
-    FillRect(dc, &r, (HBRUSH)(16));
+	super::created();
 }
 
 /*virtual*/ void MainView::on_destroy()

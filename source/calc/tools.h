@@ -969,6 +969,14 @@ INLINE bool is_digit(wchar_t c)
 #include "sts.h"
 #include "fsys.h"
 
+namespace tools
+{
+    INLINE bool inrect(const int4& r, const int2& p)
+    {
+        return p.x >= r.left && p.x < r.right && p.y >= r.top && p.y < r.bottom;
+    }
+}
+
 namespace str
 {
 	template<typename CH> std::basic_string<CH> replace_all_copy(const std::basic_string<CH>& source, const std::basic_string_view<CH>&what, const std::basic_string_view<CH>& to)

@@ -2,17 +2,20 @@
 // Microsoft Visual C++ generated include file.
 // Used by calc.rc
 //
+
+#define IDM_ABOUT                       1
+#define IDM_EXIT                        2
+#define IDM_OPTIONS                     3
+
 #define IDC_MYICON                      2
+#define IDC_CALC                        3
 #define IDD_CALC_DIALOG                 102
 #define IDS_APP_TITLE                   103
-#define IDD_ABOUTBOX                    103
-#define IDM_ABOUT                       104
-#define IDS_INPUTFONTHEX                104
-#define IDM_EXIT                        105
-#define IDI_CALC                        107
-#define IDI_SMALL                       108
-#define IDS_CALC                        109
-#define IDS_INPUTFONT                   110
+#define IDS_INPUTFONTHEX                105
+#define IDI_CALC                        108
+#define IDI_SMALL                       109
+#define IDS_CALC                        110
+#define IDS_INPUTFONT                   111
 #define IDR_MAINFRAME                   128
 #define IDC_STATIC                      -1
 

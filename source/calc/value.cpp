@@ -595,6 +595,18 @@ void value::set_unsigned(const std::vector<usingle>& m)
 	}
 }
 
+int value::bits_size() const
+{
+    value r0, r1(*this);
+	int bits = 0;
+    r1.make_zero_exponent();
+	for (; !r1.is_zero_int(); r1 = r0, ++bits)
+	{
+        r1.calc_shift_right(r0, 1);
+	}
+
+	return bits;
+}
 
 std::wstring value::to_string(signed_t radix, signed_t precision) const
 {
@@ -902,6 +914,8 @@ void value::calc_div(value &rslt, const value &divider, signed_t precision) cons
 	if (equals(divider))
 	{
 		rslt = value(1, 0);
+		if (is_negative() != divider.is_negative())
+			rslt.set_negative(true);
 		return;
 	}
 

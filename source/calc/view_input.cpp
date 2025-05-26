@@ -6,7 +6,7 @@ extern WCHAR szFontFamilyHex[32];
 #define CURSOR_TIME_FULL 100
 #define CURSOR_TIME_FADEOUT 600
 
-InputView::InputView(bool read_only):CustomCursorWindow(nullptr, LoadCursorW(nullptr, IDC_IBEAM)), read_only(read_only)
+InputView::InputView(bool read_only):GuiControlView(LoadCursorW(nullptr, IDC_IBEAM)), read_only(read_only)
 {
     LOGFONTW f = {};
     f.lfHeight = 30;
@@ -19,6 +19,8 @@ InputView::InputView(bool read_only):CustomCursorWindow(nullptr, LoadCursorW(nul
     
     font = CreateFontIndirectW(&f);
 
+    f.lfHeight = 24;
+    font_adi = CreateFontIndirectW(&f);
 }
 
 InputView::~InputView()
@@ -42,6 +44,12 @@ void InputView::init_hex_font()
 
 	font = CreateFontIndirectW(&f);
 
+    if (font_adi == nullptr)
+    {
+        f.lfHeight = 24;
+        memcpy(f.lfFaceName, szFontFamilyNormal, sizeof(f.lfFaceName));
+        font_adi = CreateFontIndirectW(&f);
+    }
 }
 
 void InputView::set_hexview()
@@ -218,6 +226,11 @@ void InputView::on_text_changed()
     else
 	{
 		canvas.draw_text(text_x, text_y, buffer, font, textcol, szperchar.data());
+        if (!adi.empty())
+        {
+            int xx = szperchar[buffer.size()] + text_x + 10;
+            canvas.draw_text(xx, text_y+3, adi, font_adi, tools::ARGB(180, 180, 180));
+        }
     }
 
     if (cursor_alpha > 0)
@@ -267,12 +280,18 @@ void InputView::copy()
 		signed_t len = ct.size() + 1;
 
 		HANDLE text = GlobalAlloc(GMEM_MOVEABLE, len * sizeof(wchar_t));
-		void *d = GlobalLock(text);
-		memcpy(d, ct.c_str(), ct.size() * sizeof(wchar_t));
-		*(((wchar_t *)d) + ct.size()) = 0;
-		GlobalUnlock(text);
+        if (text)
+		{
+			void* d = GlobalLock(text);
+			if (d != nullptr)
+			{
+				memcpy(d, ct.c_str(), ct.size() * sizeof(wchar_t));
+				*(((wchar_t*)d) + ct.size()) = 0;
+				GlobalUnlock(text);
 
-		SetClipboardData(CF_UNICODETEXT, text);
+				SetClipboardData(CF_UNICODETEXT, text);
+			}
+        }
 		CloseClipboard();
 	}
 }
@@ -284,15 +303,23 @@ void InputView::paste()
 		HGLOBAL hg = GetClipboardData(CF_UNICODETEXT);
 		if (hg)
 		{
-			const wchar_t *p = (const wchar_t*)GlobalLock(hg);
-			quiet = true;
-			for (size_t i = 0; 0 != p[i]; ++i)
-			{
-				if (!p[i + 1])
-					quiet = false;
-				on_char(p[i], true);
-			}
-			GlobalUnlock(hg);
+            if (const wchar_t* p = (const wchar_t*)GlobalLock(hg))
+            {
+                quiet = true;
+                for (size_t i = 0; 0 != p[i]; ++i)
+                {
+                    wchar_t c = p[i];
+                    if (c == ' ')
+                        continue;
+                    if (c == ',')
+                        c = '.';
+
+                    if (!p[i + 1])
+                        quiet = false;
+                    on_char(c, true);
+                }
+                GlobalUnlock(hg);
+            }
 		}
 		CloseClipboard();
 
@@ -377,7 +404,7 @@ void InputView::move_cursor(signed_t delta, bool by_words)
             }
 
             wchar_t c = buffer[cursor];
-            if (c == '.' || c == ' ')
+            if (!is_letter(c) && !is_digit(c))
                 break;
         }
 
@@ -685,8 +712,9 @@ void InputView::select_all()
 	start_cursor_animation_cycle();
 }
 
-void InputView::set_text(const std::wstring_view &t, bool selectall)
+void InputView::set_text(const std::wstring_view &t, const std::wstring_view& iadi, bool selectall)
 {
+    adi = iadi;
 	std::wstring b(t);
 	bool expand_text = b.length() >= prevbuffer.length() && memcmp(b.c_str(), prevbuffer.c_str(), sizeof(wchar_t) * prevbuffer.length()) == 0;
 	prevbuffer = b;
@@ -796,9 +824,32 @@ void InputView::update_cursor_by_mouse(const int2 &mp)
     return true;
 }
 
-/*virtual*/ void InputView::on_lbm(const int2& p, bool down)
+/*virtual*/ bool InputView::on_lbm(const int2& p, lbmaction ac)
 {
-    if (down)
+    if (ac == lbmaction::dbl)
+    {
+        signed_t x = cursor;
+        for (signed_t lim = buffer.length(); x < lim; ++x)
+        {
+            wchar_t c = buffer[x];
+            if (!is_digit(c) && !is_letter(c))
+                break;
+        }
+        --cursor;
+        for (;cursor >= 0;--cursor)
+        {
+            wchar_t c = buffer[cursor];
+            if (!is_digit(c) && !is_letter(c))
+                break;
+        }
+        ++cursor;
+        selected = x;
+        tools::swap(cursor, selected);
+        invalidate();
+        return true;
+    }
+
+    if (ac == lbmaction::down)
     {
 		activate();
         update_cursor_by_mouse(p);
@@ -812,8 +863,8 @@ void InputView::update_cursor_by_mouse(const int2 &mp)
                 selected = -1;
             invalidate();
         }
-
     }
+    return true;
 }
 
 void CalculatorInputView::colorize_ramka(errset e)
@@ -976,7 +1027,7 @@ bool ResultView::show()
     std::wstring nvs;
     errset e;
     bool neednextcall = false;
-
+    int bits = 0;
 	if (result->is_final_result_ready() || result->get_value().error() == errset::EMPTY)
 	{
 		value r = result->get_value();
@@ -993,6 +1044,7 @@ bool ResultView::show()
                 r.round((showprec + 1) / 2);
             }
             nvs = r.to_string(showradix, showprec);
+            bits = r.bits_size();
 
             if (r.is_negative() && showradix == 16 && (0 != (ResultFormat::O_NEG_HEX_TWOSCOMP & showopts)))
             {
@@ -1034,7 +1086,7 @@ bool ResultView::show()
 	}
 
 	colorize_text(e);
-    set_text(nvs, false);
+    set_text(nvs, bits > 0 ? std::to_wstring(bits).append(WSTR(" bits")) : std::wstring_view(), false);
 
     return neednextcall;
 }

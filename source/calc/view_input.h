@@ -1,17 +1,17 @@
 #pragma once
 
 
-class InputView : public CustomCursorWindow
+class InputView : public GuiControlView
 {
-	DECLARE_EYELET(InputView);
 
-    typedef CustomCursorWindow super;
+    typedef GuiControlView super;
 	enum 
 	{
 		PADDING = 5
 	};
 
     HFONT font;
+	HFONT font_adi = nullptr;
     int2 textsize = {};
     std::vector<int> szperchar;
 	signed_t prevcursor = 0, cursor = 0, selected = -1;
@@ -32,6 +32,7 @@ protected:
 	std::wstring prevbuffer;
 	std::wstring buffer;
 	std::wstring placeholder;
+	std::wstring adi; // addition text info
 	bool quiet = false; // do not notify
 
 	virtual void on_text_changed();
@@ -60,14 +61,14 @@ public:
     /*virtual*/ void created() override;
     /*virtual*/ bool on_key(int vk, bool down) override;
     /*virtual*/ void on_char(wchar_t c, bool batch) override;
-    /*virtual*/ void on_lbm(const int2& p, bool down) override;
+    /*virtual*/ bool on_lbm(const int2& p, lbmaction ac) override;
     /*virtual*/ void on_mm(const int2&) override;
     /*virtual*/ bool on_mout(const int2&) override;
 	/*virtual*/ void activate() override;
 
     virtual void animation_tick() override;
 
-	void set_text(const std::wstring_view &t, bool selectall);
+	void set_text(const std::wstring_view &t, const std::wstring_view& adi, bool selectall);
 	void set_cursor_pos(size_t pos);
 	void select_all();
 	bool is_cursor_at_end() const
